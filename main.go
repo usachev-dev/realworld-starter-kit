@@ -8,6 +8,7 @@ import (
 	// TODO убрать зависимость
 	"./models"
 	"./utils"
+	"./auth"
 	"log"
 	"time"
 
@@ -24,7 +25,7 @@ func main() {
 	router := mux.NewRouter()
 	handlers.UseRoutes(router)
 	models.AutoMigrate()
-	utils.SetSignature()
+	auth.SetSignature()
 	p := utils.Port()
 	srv := &http.Server{
 		Handler:      router,

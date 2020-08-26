@@ -3,8 +3,7 @@ package models
 import (
 	"../DB"
 	"../api_errors"
-	"../utils"
-	"fmt"
+	"../auth"
 	"net/http"
 )
 
@@ -39,7 +38,7 @@ type UserResponse struct {
 func CreateUser(u UserCreate) (UserResponse, *api_errors.E) {
 	user := User{
 		Username:     u.Username,
-		PasswordHash: utils.PasswordToHash(u.Password),
+		PasswordHash: auth.PasswordToHash(u.Password),
 		Email:        u.Email,
 	}
 
@@ -49,11 +48,7 @@ func CreateUser(u UserCreate) (UserResponse, *api_errors.E) {
 		return UserResponse{}, api_errors.NewError(http.StatusInternalServerError).Add("body", err.Error())
 	}
 
-	tokenString := utils.GetTokenString(u.Username)
-	fmt.Printf("%s", tokenString)
-	fmt.Println()
-	fmt.Printf("%s", u.Username)
-	fmt.Println()
+	tokenString := auth.GetTokenString(u.Email)
 	return UserResponse{
 		Username: u.Username,
 		Email:    u.Email,
@@ -68,19 +63,17 @@ func SignIn(u UserSignIn) (UserResponse, *api_errors.E) {
 	var user User
 	err := db.Where(&User{Email: u.Email}).First(&user).Error
 
-	fmt.Printf("%s", err)
-
 	if err != nil {
 		return UserResponse{},
 			api_errors.NewError(http.StatusInternalServerError).Add("body", err.Error())
 	}
 
-	if utils.PasswordToHash(u.Password) != user.PasswordHash {
+	if auth.CheckPassword(u.Password, user.PasswordHash) != nil {
 		return UserResponse{},
 			api_errors.NewError(http.StatusInternalServerError).Add("body", "email and password do not match")
 	}
 
-	tokenString := utils.GetTokenString(user.Username)
+	tokenString := auth.GetTokenString(user.Email)
 
 	return UserResponse{
 		Username: user.Username,
