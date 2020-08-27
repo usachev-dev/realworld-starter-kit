@@ -3,6 +3,7 @@ package handlers
 import (
 	"../api_errors"
 	"../models"
+	"../auth"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -44,7 +45,7 @@ func createUserRead(r *http.Request) (models.UserCreate, *api_errors.E) {
 	if serErr != nil {
 		return models.UserCreate{}, api_errors.NewError(http.StatusBadRequest).Add("body", serErr.Error())
 	}
-	return userData, nil
+	return userData, &api_errors.Ok
 }
 
 func signInRead(r *http.Request) (models.UserSignIn, *api_errors.E) {
@@ -56,7 +57,7 @@ func signInRead(r *http.Request) (models.UserSignIn, *api_errors.E) {
 	if serErr != nil {
 		return models.UserSignIn{}, api_errors.NewError(http.StatusBadRequest).Add("body", serErr.Error())
 	}
-	return userData, nil
+	return userData, &api_errors.Ok
 }
 
 func respToByte(value interface{}, field string) []byte {
@@ -76,7 +77,6 @@ func createUserHandle(w http.ResponseWriter, r *http.Request) {
 		err.Send(w)
 		return
 	}
-	w.WriteHeader(http.StatusOK)
 	w.Write(respToByte(user, "user"))
 }
 
@@ -91,6 +91,19 @@ func signInHandle(w http.ResponseWriter, r *http.Request) {
 		err.Send(w)
 		return
 	}
-	w.WriteHeader(http.StatusOK)
+	w.Write(respToByte(user, "user"))
+}
+
+func getUserHandle(w http.ResponseWriter, r *http.Request) {
+	token, tokenErr := auth.GetTokenFromRequest(r)
+	if tokenErr != nil {
+		api_errors.NewError(http.StatusUnauthorized).Add("Auth", "Bearer token required").Send(w)
+		return
+	}
+	user, userErr := models.GetUser(token)
+	if !userErr.IsOk() {
+		userErr.Send(w)
+		return
+	}
 	w.Write(respToByte(user, "user"))
 }

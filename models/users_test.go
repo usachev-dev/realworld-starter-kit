@@ -81,7 +81,7 @@ func TestSignedInUserHasValidToken(t *testing.T) {
 	if err != nil && !err.IsOk() {
 		t.Fatalf("could not sign in: %s", err.Error())
 	}
-	result := auth.ValidateTokenString(userResponse.Token, userCreate.Email)
+	result := auth.ValidateTokenStringWithEmail(userResponse.Token, userCreate.Email)
 	if !result.IsOk() {
 		t.Fatalf("%s; recieved invalid token: %s", result.Error(), userResponse.Token)
 	}
@@ -103,5 +103,24 @@ func TestTokenHasEmail(t *testing.T) {
 	}
 	if email != userCreate.Email {
 		t.Fatalf("token contained wrong email")
+	}
+}
+
+func TestGetUser(t *testing.T) {
+	initDb()
+	defer DB.Close()
+	createUser()
+	defer destroyUser()
+	userResponse, _ := models.SignIn(userSignIn)
+	tokenString :=  userResponse.Token
+	userResponse, err := models.GetUser(tokenString)
+	if !err.IsOk() {
+		t.Fatalf("could not get user: %s", err.Error())
+	}
+	if userResponse.Email != userCreate.Email {
+		t.Fatalf("got user with wrong email")
+	}
+	if userResponse.Username != userCreate.Username {
+		t.Fatalf("got user with wrong username")
 	}
 }
