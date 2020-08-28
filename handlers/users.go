@@ -95,15 +95,61 @@ func signInHandle(w http.ResponseWriter, r *http.Request) {
 }
 
 func getUserHandle(w http.ResponseWriter, r *http.Request) {
-	token, tokenErr := auth.GetTokenFromRequest(r)
-	if tokenErr != nil {
-		api_errors.NewError(http.StatusUnauthorized).Add("Auth", "Bearer token required").Send(w)
-		return
-	}
+	token, _ := auth.GetTokenFromRequest(r)
 	user, userErr := models.GetUser(token)
 	if !userErr.IsOk() {
 		userErr.Send(w)
 		return
 	}
 	w.Write(respToByte(user, "user"))
+}
+
+func userUpdateSerialize(data []byte) (models.UserUpdate, error) {
+	var requestData map[string]models.UserUpdate
+	err := json.Unmarshal(data, &requestData)
+	if err != nil {
+		return models.UserUpdate{}, fmt.Errorf("could not read request json")
+	}
+	return requestData["user"], nil
+}
+
+func userUpdateRead(r *http.Request) (models.UserUpdate, *api_errors.E) {
+	data, dataErr := readRequest(r)
+	if dataErr != nil {
+		return models.UserUpdate{}, api_errors.NewError(http.StatusBadRequest).Add("body", dataErr.Error())
+	}
+	userUpdate, serErr := userUpdateSerialize(data)
+	if serErr != nil {
+		return models.UserUpdate{}, api_errors.NewError(http.StatusBadRequest).Add("body", serErr.Error())
+	}
+	return userUpdate, &api_errors.Ok
+}
+
+func updateUserHandle(w http.ResponseWriter, r *http.Request) {
+	token, _ := auth.GetTokenFromRequest(r)
+	user, userErr := models.GetUser(token)
+	if !userErr.IsOk() {
+		userErr.Send(w)
+		return
+	}
+	tokenEmail, emailErr := auth.GetEmailFromTokenString(token)
+	if emailErr != nil {
+		api_errors.NewError(http.StatusForbidden).Add("email", "token should contain email info").Send(w)
+		return
+	}
+	if user.Email != tokenEmail {
+		api_errors.NewError(http.StatusForbidden).Add("email", "cannot update other users").Send(w)
+		return
+	}
+	userUpdate, readErr := userUpdateRead(r)
+	if !readErr.IsOk() {
+		readErr.Send(w)
+		return
+	}
+	userResponse, err := models.UpdateUser(userUpdate, token)
+	if !err.IsOk() {
+		err.Send(w)
+		return
+	}
+	w.Write(respToByte(userResponse, "user"))
 }

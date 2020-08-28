@@ -29,11 +29,19 @@ type User struct {
 }
 
 type UserResponse struct {
-	Username string `json:"username"`
-	Email    string `json:"email"`
-	Bio      string `json:"bio"`
+	Username string  `json:"username"`
+	Email    string  `json:"email"`
+	Bio      string  `json:"bio"`
 	Image    *string `json:"image"`
-	Token    string `json:"token"`
+	Token    string  `json:"token"`
+}
+
+type UserUpdate struct {
+	Email    *string `json:"email"`
+	Username *string `json:"username"`
+	Password *string `json:"password"`
+	Image    *string `json:"image"`
+	Bio      *string `json:"bio"`
 }
 
 func CreateUser(u UserCreate) (UserResponse, *api_errors.E) {
@@ -87,7 +95,7 @@ func GetUser(token string) (UserResponse, *api_errors.E) {
 	}
 	db := DB.Get()
 	var user User
-	dbErr := db.Where(&User{Email:email}).First(&user).Error
+	dbErr := db.Where(&User{Email: email}).First(&user).Error
 	if dbErr != nil {
 		return UserResponse{}, api_errors.NewError(http.StatusNotFound).Add("email", fmt.Sprintf("could not find user with email %s", email))
 	}
@@ -97,5 +105,46 @@ func GetUser(token string) (UserResponse, *api_errors.E) {
 		Bio:      user.Bio,
 		Image:    user.Image,
 		Token:    token,
+	}, &api_errors.Ok
+}
+
+func UpdateUser(userUpdate UserUpdate, token string) (UserResponse, *api_errors.E) {
+	email, emailErr := auth.GetEmailFromTokenString(token)
+	if emailErr != nil {
+		return UserResponse{}, api_errors.NewError(http.StatusUnauthorized).Add("token", "token shpuld contain email info")
+	}
+	db := DB.Get()
+	var user User
+	dbErr := db.Where(&User{Email: email}).First(&user).Error
+	if dbErr != nil {
+		return UserResponse{}, api_errors.NewError(http.StatusNotFound).Add("email", fmt.Sprintf("could not find user with email %s", *userUpdate.Email))
+	}
+	if userUpdate.Email != nil {
+		user.Email = *userUpdate.Email
+	}
+	if userUpdate.Username != nil {
+		user.Username = *userUpdate.Username
+	}
+	if userUpdate.Bio != nil {
+		user.Bio = *userUpdate.Bio
+	}
+	if userUpdate.Image != nil {
+		user.Image = userUpdate.Image
+	}
+	if userUpdate.Password != nil {
+		user.PasswordHash = auth.PasswordToHash(*userUpdate.Password)
+	}
+	saveErr := db.Save(&user).Error
+	if saveErr != nil {
+		return UserResponse{}, api_errors.NewError(http.StatusInternalServerError).Add("user", saveErr.Error())
+	}
+
+	tokenString := auth.GetTokenString(user.Email)
+	return UserResponse{
+		Username: user.Username,
+		Email:    user.Email,
+		Bio:      user.Bio,
+		Image:    user.Image,
+		Token:    tokenString,
 	}, &api_errors.Ok
 }

@@ -124,3 +124,33 @@ func TestGetUser(t *testing.T) {
 		t.Fatalf("got user with wrong username")
 	}
 }
+
+func TestUpdateUser(t *testing.T) {
+	initDb()
+	defer DB.Close()
+	createUser()
+	defer destroyUser()
+	userResponse, _ := models.SignIn(userSignIn)
+	tokenString :=  userResponse.Token
+
+	userName := "asdasd"
+	userUpdate := models.UserUpdate{
+		Username: &userName,
+	}
+
+	userResponse, err := models.UpdateUser(userUpdate, tokenString)
+	if !err.IsOk() {
+		t.Fatalf("could not update user: %s", err.Error())
+	}
+	if userResponse.Username != userName {
+		t.Fatalf("userName did not update")
+	}
+	if userResponse.Token == "" {
+		t.Fatalf("user update response has no token")
+	}
+	validateError := auth.ValidateTokenString(userResponse.Token)
+	if !validateError.IsOk() {
+		t.Fatalf("user update response token is invalid: %s", validateError.Error())
+	}
+
+}

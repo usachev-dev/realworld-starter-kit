@@ -13,4 +13,5 @@ func UseRoutes(r *mux.Router) {
 	authRoutes := r.NewRoute().Subrouter()
 	authRoutes.Use(auth.AuthRequest)
 	authRoutes.HandleFunc("/user", getUserHandle).Methods(http.MethodGet)
+	authRoutes.HandleFunc("/user", updateUserHandle).Methods(http.MethodPut)
 }
