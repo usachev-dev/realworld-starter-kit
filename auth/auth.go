@@ -1,13 +1,9 @@
 package auth
 
 import (
-	"../api_errors"
 	"fmt"
 	"github.com/dgrijalva/jwt-go"
 	"golang.org/x/crypto/bcrypt"
-	"net/http"
-	"os"
-	"strings"
 	"time"
 )
 
@@ -17,11 +13,8 @@ func expireDuration() time.Duration {
 	return time.Hour * 100
 }
 
-func SetSignature() {
-	s := os.Getenv("SIGNATURE")
-	if s != "" {
-		signature = []byte(s)
-	}
+func SetSignature(s string) {
+	signature = []byte(s)
 }
 
 type Claims struct {
@@ -58,29 +51,29 @@ func GetTokenString(email string) string {
 	return result
 }
 
-func ValidateTokenStringWithEmail(tokenString string, email string) *api_errors.E {
+func ValidateTokenStringWithEmail(tokenString string, email string) error {
 	token, err := jwt.ParseWithClaims(tokenString, &Claims{}, KeyFunc)
 	if err != nil {
-		return api_errors.NewError(http.StatusUnauthorized).Add("Auth", fmt.Sprintf("could not authenticate token: %s", err.Error()))
+		return fmt.Errorf(fmt.Sprintf("could not authenticate token: %s", err.Error()))
 	}
 	claims, ok := token.Claims.(*Claims)
 	if ok && token.Valid && claims.Email == email {
 		return nil
 	} else {
-		return api_errors.NewError(http.StatusUnauthorized).Add("Auth", fmt.Sprintf("could not authorize token: %s", claims.Valid().Error()))
+		return fmt.Errorf("could not authorize token: %s", claims.Valid().Error())
 	}
 }
 
-func ValidateTokenString(tokenString string) *api_errors.E {
+func ValidateTokenString(tokenString string) error {
 	token, err := jwt.ParseWithClaims(tokenString, &Claims{}, KeyFunc)
 	if err != nil {
-		return api_errors.NewError(http.StatusUnauthorized).Add("Auth", fmt.Sprintf("could not authenticate token: %s", err.Error()))
+		return fmt.Errorf("could not authenticate token: %s", err.Error())
 	}
 	claims, ok := token.Claims.(*Claims)
 	if ok && token.Valid {
 		return nil
 	} else {
-		return api_errors.NewError(http.StatusUnauthorized).Add("Auth", fmt.Sprintf("could not authorize token: %s", claims.Valid().Error()))
+		return fmt.Errorf("could not authorize token: %s", claims.Valid().Error())
 	}
 }
 
@@ -102,33 +95,4 @@ func KeyFunc(token *jwt.Token) (interface{}, error) {
 		return nil, fmt.Errorf("Unexpected signing method: %v", token.Header["alg"])
 	}
 	return signature, nil
-}
-
-func GetTokenFromRequest(r *http.Request) (string, error) {
-	h := r.Header.Get("Authorization")
-	if h == "" || len(h) == 0 {
-		return "", fmt.Errorf("could not get authorization header")
-	}
-	split := strings.Split(h, " ")
-	if len(split) == 0 || !(split[0] == "Bearer" || split[0] == "Token") {
-		return "", fmt.Errorf("authorization header should contain Bearer or Token token")
-	}
-	token := split[1]
-	return token, nil
-}
-
-func AuthRequest(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		token, err := GetTokenFromRequest(r)
-		if err != nil {
-			api_errors.NewError(http.StatusUnauthorized).Add("Auth", err.Error()).Send(w)
-			return
-		}
-		valErr := ValidateTokenString(token)
-		if valErr != nil {
-			valErr.Send(w)
-			return
-		}
-		next.ServeHTTP(w, r)
-	})
 }

@@ -1,9 +1,10 @@
-package models_test
+package domain_test
 
 import (
 	"../DB"
 	"../api_errors"
 	"../auth"
+	"../domain"
 	"../models"
 	"../utils"
 	"fmt"
@@ -18,19 +19,19 @@ func initDb() {
 	models.AutoMigrate()
 }
 
-var userCreate models.UserCreate = models.UserCreate{
+var userCreate domain.UserCreate = domain.UserCreate{
 	Email:    "u@u",
 	Password: "fretewrts",
 	Username: "54tersdfg",
 }
 
-var userSignIn models.UserSignIn = models.UserSignIn{
+var userSignIn domain.UserSignIn = domain.UserSignIn{
 	Email:    userCreate.Email,
 	Password: userCreate.Password,
 }
 
-func createUser() (models.UserResponse, *api_errors.E) {
-	return models.CreateUser(userCreate)
+func createUser() (domain.UserResponse, *api_errors.E) {
+	return domain.CreateUser(userCreate)
 }
 
 func destroyUser() {
@@ -53,10 +54,13 @@ func TestCreateUser(t *testing.T) {
 func TestSignIn(t *testing.T) {
 	initDb()
 	defer DB.Close()
-	createUser()
+	_, uerr := createUser()
+	if uerr != nil {
+		t.Fatal(uerr)
+	}
 	defer destroyUser()
 
-	result, err := models.SignIn(userSignIn)
+	result, err := domain.SignIn(userSignIn)
 	if err != nil {
 		t.Fatalf("could not sign in, %s", err.Error())
 	}
@@ -74,10 +78,13 @@ func TestSignIn(t *testing.T) {
 func TestSignedInUserHasValidToken(t *testing.T) {
 	initDb()
 	defer DB.Close()
-	createUser()
+	_, uerr := createUser()
+	if uerr != nil {
+		t.Fatal(uerr)
+	}
 	defer destroyUser()
 
-	userResponse, err := models.SignIn(userSignIn)
+	userResponse, err := domain.SignIn(userSignIn)
 	if err != nil {
 		t.Fatalf("could not sign in: %s", err.Error())
 	}
@@ -90,9 +97,12 @@ func TestSignedInUserHasValidToken(t *testing.T) {
 func TestTokenHasEmail(t *testing.T) {
 	initDb()
 	defer DB.Close()
-	createUser()
+	_, uerr := createUser()
+	if uerr != nil {
+		t.Fatal(uerr)
+	}
 	defer destroyUser()
-	userResponse, _ := models.SignIn(userSignIn)
+	userResponse, _ := domain.SignIn(userSignIn)
 	tokenString := userResponse.Token
 	email, err := auth.GetEmailFromTokenString(tokenString)
 	if err != nil {
@@ -109,11 +119,14 @@ func TestTokenHasEmail(t *testing.T) {
 func TestGetUser(t *testing.T) {
 	initDb()
 	defer DB.Close()
-	createUser()
+	_, uerr := createUser()
+	if uerr != nil {
+		t.Fatal(uerr)
+	}
 	defer destroyUser()
-	userResponse, _ := models.SignIn(userSignIn)
+	userResponse, _ := domain.SignIn(userSignIn)
 	tokenString := userResponse.Token
-	userResponse, err := models.GetUser(tokenString)
+	userResponse, err := domain.GetUser(tokenString)
 	if err != nil {
 		t.Fatalf("could not get user: %s", err.Error())
 	}
@@ -128,17 +141,20 @@ func TestGetUser(t *testing.T) {
 func TestUpdateUser(t *testing.T) {
 	initDb()
 	defer DB.Close()
-	createUser()
+	_, uerr := createUser()
+	if uerr != nil {
+		t.Fatal(uerr)
+	}
 	defer destroyUser()
-	userResponse, _ := models.SignIn(userSignIn)
-	tokenString := userResponse.Token
+	si, _ := domain.SignIn(userSignIn)
+	tokenString := si.Token
 
 	userName := "asdasd"
-	userUpdate := models.UserUpdate{
+	userUpdate := domain.UserUpdate{
 		Username: &userName,
 	}
 
-	userResponse, err := models.UpdateUser(userUpdate, tokenString)
+	userResponse, err := domain.UpdateUser(userUpdate, tokenString)
 	if err != nil {
 		t.Fatalf("could not update user: %s", err.Error())
 	}
@@ -158,11 +174,14 @@ func TestUpdateUser(t *testing.T) {
 func TestGetProfile(t *testing.T) {
 	initDb()
 	defer DB.Close()
-	createUser()
+	_, uerr := createUser()
+	if uerr != nil {
+		t.Fatal(uerr)
+	}
 	defer destroyUser()
-	userResponse, _ := models.SignIn(userSignIn)
+	userResponse, _ := domain.SignIn(userSignIn)
 	tokenString := userResponse.Token
-	profile, err := models.GetProfile(userCreate.Username, tokenString)
+	profile, err := domain.GetProfile(userCreate.Username, tokenString)
 	if err != nil {
 		t.Fatalf("could not get profile")
 	}

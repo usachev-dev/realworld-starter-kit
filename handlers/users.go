@@ -3,12 +3,14 @@ package handlers
 import (
 	"../api_errors"
 	"../auth"
-	"../models"
+	"../domain"
 	"encoding/json"
 	"fmt"
 	"github.com/gorilla/mux"
 	"io/ioutil"
+	"log"
 	"net/http"
+	"strings"
 )
 
 func readRequest(r *http.Request) ([]byte, error) {
@@ -19,44 +21,44 @@ func readRequest(r *http.Request) ([]byte, error) {
 	return body, nil
 }
 
-func createUserSerialize(data []byte) (models.UserCreate, error) {
-	var requestData map[string]models.UserCreate
+func createUserSerialize(data []byte) (domain.UserCreate, error) {
+	var requestData map[string]domain.UserCreate
 	err := json.Unmarshal(data, &requestData)
 	if err != nil {
-		return models.UserCreate{}, fmt.Errorf("could not read request json")
+		return domain.UserCreate{}, fmt.Errorf("could not read request json")
 	}
 	return requestData["user"], nil
 }
 
-func userSignInSerialize(data []byte) (models.UserSignIn, error) {
-	var requestData map[string]models.UserSignIn
+func userSignInSerialize(data []byte) (domain.UserSignIn, error) {
+	var requestData map[string]domain.UserSignIn
 	err := json.Unmarshal(data, &requestData)
 	if err != nil {
-		return models.UserSignIn{}, fmt.Errorf("could not read request json")
+		return domain.UserSignIn{}, fmt.Errorf("could not read request json")
 	}
 	return requestData["user"], nil
 }
 
-func createUserRead(r *http.Request) (models.UserCreate, *api_errors.E) {
+func createUserRead(r *http.Request) (domain.UserCreate, *api_errors.E) {
 	userBytes, readErr := readRequest(r)
 	if readErr != nil {
-		return models.UserCreate{}, api_errors.NewError(http.StatusBadRequest).Add("body", readErr.Error())
+		return domain.UserCreate{}, api_errors.NewError(http.StatusBadRequest).Add("body", readErr.Error())
 	}
 	userData, serErr := createUserSerialize(userBytes)
 	if serErr != nil {
-		return models.UserCreate{}, api_errors.NewError(http.StatusBadRequest).Add("body", serErr.Error())
+		return domain.UserCreate{}, api_errors.NewError(http.StatusBadRequest).Add("body", serErr.Error())
 	}
 	return userData, nil
 }
 
-func signInRead(r *http.Request) (models.UserSignIn, *api_errors.E) {
+func signInRead(r *http.Request) (domain.UserSignIn, *api_errors.E) {
 	userBytes, readErr := readRequest(r)
 	if readErr != nil {
-		return models.UserSignIn{}, api_errors.NewError(http.StatusBadRequest).Add("body", readErr.Error())
+		return domain.UserSignIn{}, api_errors.NewError(http.StatusBadRequest).Add("body", readErr.Error())
 	}
 	userData, serErr := userSignInSerialize(userBytes)
 	if serErr != nil {
-		return models.UserSignIn{}, api_errors.NewError(http.StatusBadRequest).Add("body", serErr.Error())
+		return domain.UserSignIn{}, api_errors.NewError(http.StatusBadRequest).Add("body", serErr.Error())
 	}
 	return userData, nil
 }
@@ -73,12 +75,12 @@ func createUserHandle(w http.ResponseWriter, r *http.Request) {
 		readErr.Send(w)
 		return
 	}
-	user, err := models.CreateUser(userData)
+	user, err := domain.CreateUser(userData)
 	if err != nil {
 		err.Send(w)
 		return
 	}
-	w.Write(respToByte(user, "user"))
+	log.Println(w.Write(respToByte(user, "user")))
 }
 
 func signInHandle(w http.ResponseWriter, r *http.Request) {
@@ -87,48 +89,48 @@ func signInHandle(w http.ResponseWriter, r *http.Request) {
 		readErr.Send(w)
 		return
 	}
-	user, err := models.SignIn(userData)
+	user, err := domain.SignIn(userData)
 	if err != nil {
 		err.Send(w)
 		return
 	}
-	w.Write(respToByte(user, "user"))
+	log.Println(w.Write(respToByte(user, "user")))
 }
 
 func getUserHandle(w http.ResponseWriter, r *http.Request) {
-	token, _ := auth.GetTokenFromRequest(r)
-	user, userErr := models.GetUser(token)
+	token, _ := GetTokenFromRequest(r)
+	user, userErr := domain.GetUser(token)
 	if userErr != nil {
 		userErr.Send(w)
 		return
 	}
-	w.Write(respToByte(user, "user"))
+	log.Println(w.Write(respToByte(user, "user")))
 }
 
-func userUpdateSerialize(data []byte) (models.UserUpdate, error) {
-	var requestData map[string]models.UserUpdate
+func userUpdateSerialize(data []byte) (domain.UserUpdate, error) {
+	var requestData map[string]domain.UserUpdate
 	err := json.Unmarshal(data, &requestData)
 	if err != nil {
-		return models.UserUpdate{}, fmt.Errorf("could not read request json")
+		return domain.UserUpdate{}, fmt.Errorf("could not read request json")
 	}
 	return requestData["user"], nil
 }
 
-func userUpdateRead(r *http.Request) (models.UserUpdate, *api_errors.E) {
+func userUpdateRead(r *http.Request) (domain.UserUpdate, *api_errors.E) {
 	data, dataErr := readRequest(r)
 	if dataErr != nil {
-		return models.UserUpdate{}, api_errors.NewError(http.StatusBadRequest).Add("body", dataErr.Error())
+		return domain.UserUpdate{}, api_errors.NewError(http.StatusBadRequest).Add("body", dataErr.Error())
 	}
 	userUpdate, serErr := userUpdateSerialize(data)
 	if serErr != nil {
-		return models.UserUpdate{}, api_errors.NewError(http.StatusBadRequest).Add("body", serErr.Error())
+		return domain.UserUpdate{}, api_errors.NewError(http.StatusBadRequest).Add("body", serErr.Error())
 	}
 	return userUpdate, nil
 }
 
 func updateUserHandle(w http.ResponseWriter, r *http.Request) {
-	token, _ := auth.GetTokenFromRequest(r)
-	user, userErr := models.GetUser(token)
+	token, _ := GetTokenFromRequest(r)
+	user, userErr := domain.GetUser(token)
 	if userErr != nil {
 		userErr.Send(w)
 		return
@@ -147,16 +149,16 @@ func updateUserHandle(w http.ResponseWriter, r *http.Request) {
 		readErr.Send(w)
 		return
 	}
-	userResponse, err := models.UpdateUser(userUpdate, token)
+	userResponse, err := domain.UpdateUser(userUpdate, token)
 	if err != nil {
 		err.Send(w)
 		return
 	}
-	w.Write(respToByte(userResponse, "user"))
+	log.Println(w.Write(respToByte(userResponse, "user")))
 }
 
 func getProfileHandle(w http.ResponseWriter, r *http.Request) {
-	token, tErr := auth.GetTokenFromRequest(r)
+	token, tErr := GetTokenFromRequest(r)
 	if tErr != nil {
 		token = ""
 	}
@@ -167,10 +169,39 @@ func getProfileHandle(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	profile, err := models.GetProfile(username, token)
+	profile, err := domain.GetProfile(username, token)
 	if err != nil {
 		err.Send(w)
 		return
 	}
-	w.Write(respToByte(profile, "profile"))
+	log.Println(w.Write(respToByte(profile, "profile")))
+}
+
+func GetTokenFromRequest(r *http.Request) (string, error) {
+	h := r.Header.Get("Authorization")
+	if h == "" || len(h) == 0 {
+		return "", fmt.Errorf("could not get authorization header")
+	}
+	split := strings.Split(h, " ")
+	if len(split) == 0 || !(split[0] == "Bearer" || split[0] == "Token") {
+		return "", fmt.Errorf("authorization header should contain Bearer or Token token")
+	}
+	token := split[1]
+	return token, nil
+}
+
+func AuthRequest(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		token, err := GetTokenFromRequest(r)
+		if err != nil {
+			api_errors.NewError(http.StatusUnauthorized).Add("Auth", err.Error()).Send(w)
+			return
+		}
+		valErr := auth.ValidateTokenString(token)
+		if valErr != nil {
+			api_errors.NewError(http.StatusUnauthorized).Add("Auth", valErr.Error()).Send(w)
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
 }

@@ -4,8 +4,8 @@ import (
 	"./DB"
 	"./handlers"
 	"fmt"
+	"os"
 
-	// TODO убрать зависимость
 	"./auth"
 	"./models"
 	"./utils"
@@ -21,11 +21,11 @@ func main() {
 	if dbErr != nil {
 		panic(fmt.Sprintf("could not connect to db: %s", dbErr))
 	}
-	defer DB.Close()
+	defer log.Fatal(DB.Close())
 	router := mux.NewRouter()
 	handlers.UseRoutes(router)
 	models.AutoMigrate()
-	auth.SetSignature()
+	SetSignature()
 	p := utils.Port()
 	srv := &http.Server{
 		Handler:      router,
@@ -34,4 +34,11 @@ func main() {
 		ReadTimeout:  15 * time.Second,
 	}
 	log.Fatal(srv.ListenAndServe())
+}
+
+func SetSignature() {
+	s := os.Getenv("SIGNATURE")
+	if s != "" {
+		auth.SetSignature(s)
+	}
 }
