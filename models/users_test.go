@@ -42,7 +42,7 @@ func TestCreateUser(t *testing.T) {
 	defer DB.Close()
 	r, err := createUser()
 	defer destroyUser()
-	if !err.IsOk() {
+	if err != nil {
 		t.Fatalf("could not create user: %s", err)
 	}
 	if r.Token == "" {
@@ -57,7 +57,7 @@ func TestSignIn(t *testing.T) {
 	defer destroyUser()
 
 	result, err := models.SignIn(userSignIn)
-	if !err.IsOk() {
+	if err != nil {
 		t.Fatalf("could not sign in, %s", err.Error())
 	}
 	if result.Token == "" {
@@ -78,11 +78,11 @@ func TestSignedInUserHasValidToken(t *testing.T) {
 	defer destroyUser()
 
 	userResponse, err := models.SignIn(userSignIn)
-	if err != nil && !err.IsOk() {
+	if err != nil {
 		t.Fatalf("could not sign in: %s", err.Error())
 	}
 	result := auth.ValidateTokenStringWithEmail(userResponse.Token, userCreate.Email)
-	if !result.IsOk() {
+	if result != nil {
 		t.Fatalf("%s; recieved invalid token: %s", result.Error(), userResponse.Token)
 	}
 }
@@ -114,7 +114,7 @@ func TestGetUser(t *testing.T) {
 	userResponse, _ := models.SignIn(userSignIn)
 	tokenString := userResponse.Token
 	userResponse, err := models.GetUser(tokenString)
-	if !err.IsOk() {
+	if err != nil {
 		t.Fatalf("could not get user: %s", err.Error())
 	}
 	if userResponse.Email != userCreate.Email {
@@ -139,7 +139,7 @@ func TestUpdateUser(t *testing.T) {
 	}
 
 	userResponse, err := models.UpdateUser(userUpdate, tokenString)
-	if !err.IsOk() {
+	if err != nil {
 		t.Fatalf("could not update user: %s", err.Error())
 	}
 	if userResponse.Username != userName {
@@ -149,7 +149,7 @@ func TestUpdateUser(t *testing.T) {
 		t.Fatalf("user update response has no token")
 	}
 	validateError := auth.ValidateTokenString(userResponse.Token)
-	if !validateError.IsOk() {
+	if validateError != nil {
 		t.Fatalf("user update response token is invalid: %s", validateError.Error())
 	}
 
@@ -163,7 +163,7 @@ func TestGetProfile(t *testing.T) {
 	userResponse, _ := models.SignIn(userSignIn)
 	tokenString := userResponse.Token
 	profile, err := models.GetProfile(userCreate.Username, tokenString)
-	if !err.IsOk() {
+	if err != nil {
 		t.Fatalf("could not get profile")
 	}
 	if profile.Following {

@@ -77,7 +77,7 @@ func CreateUser(u UserCreate) (UserResponse, *api_errors.E) {
 		Bio:      "",
 		Image:    nil,
 		Token:    tokenString,
-	}, &api_errors.Ok
+	}, nil
 }
 
 func SignIn(u UserSignIn) (UserResponse, *api_errors.E) {
@@ -98,7 +98,7 @@ func SignIn(u UserSignIn) (UserResponse, *api_errors.E) {
 		Bio:      user.Bio,
 		Image:    user.Image,
 		Token:    tokenString,
-	}, &api_errors.Ok
+	}, nil
 }
 
 func getUser(token string) (User, *api_errors.E) {
@@ -112,12 +112,12 @@ func getUser(token string) (User, *api_errors.E) {
 	if dbErr != nil {
 		return User{}, api_errors.NewError(http.StatusNotFound).Add("email", fmt.Sprintf("could not find user with email %s", email))
 	}
-	return user, &api_errors.Ok
+	return user, nil
 }
 
 func GetUser(token string) (UserResponse, *api_errors.E) {
 	user, err := getUser(token)
-	if !err.IsOk() {
+	if err != nil {
 		return UserResponse{}, err
 	}
 	return UserResponse{
@@ -126,7 +126,7 @@ func GetUser(token string) (UserResponse, *api_errors.E) {
 		Bio:      user.Bio,
 		Image:    user.Image,
 		Token:    token,
-	}, &api_errors.Ok
+	}, nil
 }
 
 func UpdateUser(userUpdate UserUpdate, token string) (UserResponse, *api_errors.E) {
@@ -167,7 +167,7 @@ func UpdateUser(userUpdate UserUpdate, token string) (UserResponse, *api_errors.
 		Bio:      user.Bio,
 		Image:    user.Image,
 		Token:    tokenString,
-	}, &api_errors.Ok
+	}, nil
 }
 
 func isFollowing(followedByID uint, followingID uint) bool {
@@ -194,7 +194,7 @@ func GetProfile(username string, token string) (Profile, *api_errors.E) {
 	following := false
 	if token != "" {
 		follower, followerErr := getUser(token)
-		if followerErr.IsOk() {
+		if followerErr == nil {
 			following = isFollowing(follower.ID, user.ID)
 		}
 	}
@@ -204,5 +204,5 @@ func GetProfile(username string, token string) (Profile, *api_errors.E) {
 		Bio:       user.Bio,
 		Image:     user.Image,
 		Following: following,
-	}, &api_errors.Ok
+	}, nil
 }

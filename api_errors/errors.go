@@ -21,15 +21,6 @@ func (e E) Send(w http.ResponseWriter) {
 	w.Write(body)
 }
 
-var Ok = E{
-	http.StatusOK,
-	map[string][]string{},
-}
-
-func (e E) IsOk() bool {
-	return e.code == http.StatusOK
-}
-
 func NewError(code int) *E {
 	return &E{
 		code,

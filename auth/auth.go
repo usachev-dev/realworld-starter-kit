@@ -65,7 +65,7 @@ func ValidateTokenStringWithEmail(tokenString string, email string) *api_errors.
 	}
 	claims, ok := token.Claims.(*Claims)
 	if ok && token.Valid && claims.Email == email {
-		return &api_errors.Ok
+		return nil
 	} else {
 		return api_errors.NewError(http.StatusUnauthorized).Add("Auth", fmt.Sprintf("could not authorize token: %s", claims.Valid().Error()))
 	}
@@ -78,7 +78,7 @@ func ValidateTokenString(tokenString string) *api_errors.E {
 	}
 	claims, ok := token.Claims.(*Claims)
 	if ok && token.Valid {
-		return &api_errors.Ok
+		return nil
 	} else {
 		return api_errors.NewError(http.StatusUnauthorized).Add("Auth", fmt.Sprintf("could not authorize token: %s", claims.Valid().Error()))
 	}
@@ -125,7 +125,7 @@ func AuthRequest(next http.Handler) http.Handler {
 			return
 		}
 		valErr := ValidateTokenString(token)
-		if !valErr.IsOk() {
+		if valErr != nil {
 			valErr.Send(w)
 			return
 		}

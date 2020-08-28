@@ -46,7 +46,7 @@ func createUserRead(r *http.Request) (models.UserCreate, *api_errors.E) {
 	if serErr != nil {
 		return models.UserCreate{}, api_errors.NewError(http.StatusBadRequest).Add("body", serErr.Error())
 	}
-	return userData, &api_errors.Ok
+	return userData, nil
 }
 
 func signInRead(r *http.Request) (models.UserSignIn, *api_errors.E) {
@@ -58,7 +58,7 @@ func signInRead(r *http.Request) (models.UserSignIn, *api_errors.E) {
 	if serErr != nil {
 		return models.UserSignIn{}, api_errors.NewError(http.StatusBadRequest).Add("body", serErr.Error())
 	}
-	return userData, &api_errors.Ok
+	return userData, nil
 }
 
 func respToByte(value interface{}, field string) []byte {
@@ -69,12 +69,12 @@ func respToByte(value interface{}, field string) []byte {
 
 func createUserHandle(w http.ResponseWriter, r *http.Request) {
 	userData, readErr := createUserRead(r)
-	if !readErr.IsOk() {
+	if readErr != nil {
 		readErr.Send(w)
 		return
 	}
 	user, err := models.CreateUser(userData)
-	if !err.IsOk() {
+	if err != nil {
 		err.Send(w)
 		return
 	}
@@ -83,12 +83,12 @@ func createUserHandle(w http.ResponseWriter, r *http.Request) {
 
 func signInHandle(w http.ResponseWriter, r *http.Request) {
 	userData, readErr := signInRead(r)
-	if !readErr.IsOk() {
+	if readErr != nil {
 		readErr.Send(w)
 		return
 	}
 	user, err := models.SignIn(userData)
-	if !err.IsOk() {
+	if err != nil {
 		err.Send(w)
 		return
 	}
@@ -98,7 +98,7 @@ func signInHandle(w http.ResponseWriter, r *http.Request) {
 func getUserHandle(w http.ResponseWriter, r *http.Request) {
 	token, _ := auth.GetTokenFromRequest(r)
 	user, userErr := models.GetUser(token)
-	if !userErr.IsOk() {
+	if userErr != nil {
 		userErr.Send(w)
 		return
 	}
@@ -123,13 +123,13 @@ func userUpdateRead(r *http.Request) (models.UserUpdate, *api_errors.E) {
 	if serErr != nil {
 		return models.UserUpdate{}, api_errors.NewError(http.StatusBadRequest).Add("body", serErr.Error())
 	}
-	return userUpdate, &api_errors.Ok
+	return userUpdate, nil
 }
 
 func updateUserHandle(w http.ResponseWriter, r *http.Request) {
 	token, _ := auth.GetTokenFromRequest(r)
 	user, userErr := models.GetUser(token)
-	if !userErr.IsOk() {
+	if userErr != nil {
 		userErr.Send(w)
 		return
 	}
@@ -143,12 +143,12 @@ func updateUserHandle(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	userUpdate, readErr := userUpdateRead(r)
-	if !readErr.IsOk() {
+	if readErr != nil {
 		readErr.Send(w)
 		return
 	}
 	userResponse, err := models.UpdateUser(userUpdate, token)
-	if !err.IsOk() {
+	if err != nil {
 		err.Send(w)
 		return
 	}
@@ -168,7 +168,7 @@ func getProfileHandle(w http.ResponseWriter, r *http.Request) {
 	}
 
 	profile, err := models.GetProfile(username, token)
-	if !err.IsOk() {
+	if err != nil {
 		err.Send(w)
 		return
 	}
