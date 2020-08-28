@@ -97,7 +97,7 @@ func GetEmailFromTokenString(tokenString string) (string, error) {
 	}
 }
 
-func KeyFunc(token *jwt.Token) (interface{}, error)  {
+func KeyFunc(token *jwt.Token) (interface{}, error) {
 	if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 		return nil, fmt.Errorf("Unexpected signing method: %v", token.Header["alg"])
 	}
@@ -110,7 +110,7 @@ func GetTokenFromRequest(r *http.Request) (string, error) {
 		return "", fmt.Errorf("could not get authorization header")
 	}
 	split := strings.Split(h, " ")
-	if len(split) == 0 || !(split[0] == "Bearer" || split[0] =="Token") {
+	if len(split) == 0 || !(split[0] == "Bearer" || split[0] == "Token") {
 		return "", fmt.Errorf("authorization header should contain Bearer or Token token")
 	}
 	token := split[1]
@@ -121,8 +121,6 @@ func AuthRequest(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		token, err := GetTokenFromRequest(r)
 		if err != nil {
-			fmt.Printf("%s", err.Error())
-			fmt.Printf("%+v", r.Header.Get("Authorization"))
 			api_errors.NewError(http.StatusUnauthorized).Add("Auth", err.Error()).Send(w)
 			return
 		}

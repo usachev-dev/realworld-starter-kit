@@ -6,7 +6,6 @@ import (
 	_ "github.com/jinzhu/gorm/dialects/postgres"
 )
 
-
 func InitPostgres(
 	host string,
 	port string,
@@ -30,7 +29,6 @@ func InitPostgres(
 	DB = result
 	return nil
 }
-
 
 func connectPostgres(connectString string) (*gorm.DB, error) {
 	db, err := gorm.Open("postgres", connectString)

@@ -7,4 +7,5 @@ import (
 func AutoMigrate() {
 	db := DB.Get()
 	db.AutoMigrate(&User{})
+	db.AutoMigrate(&Follow{})
 }

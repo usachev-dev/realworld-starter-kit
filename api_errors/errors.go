@@ -47,6 +47,6 @@ func (e *E) Add(key string, error string) *E {
 }
 
 func (e *E) SetCode(code int) *E {
-	e.code = code;
+	e.code = code
 	return e
 }

@@ -2,10 +2,11 @@ package handlers
 
 import (
 	"../api_errors"
-	"../models"
 	"../auth"
+	"../models"
 	"encoding/json"
 	"fmt"
+	"github.com/gorilla/mux"
 	"io/ioutil"
 	"net/http"
 )
@@ -152,4 +153,24 @@ func updateUserHandle(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.Write(respToByte(userResponse, "user"))
+}
+
+func getProfileHandle(w http.ResponseWriter, r *http.Request) {
+	token, tErr := auth.GetTokenFromRequest(r)
+	if tErr != nil {
+		token = ""
+	}
+	vars := mux.Vars(r)
+	username := vars["username"]
+	if username == "" {
+		api_errors.NewError(http.StatusBadRequest).Add("username", "profile request should contain username").Send(w)
+		return
+	}
+
+	profile, err := models.GetProfile(username, token)
+	if !err.IsOk() {
+		err.Send(w)
+		return
+	}
+	w.Write(respToByte(profile, "profile"))
 }

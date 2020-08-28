@@ -25,7 +25,7 @@ var userCreate models.UserCreate = models.UserCreate{
 }
 
 var userSignIn models.UserSignIn = models.UserSignIn{
-	Email: userCreate.Email,
+	Email:    userCreate.Email,
 	Password: userCreate.Password,
 }
 
@@ -93,7 +93,7 @@ func TestTokenHasEmail(t *testing.T) {
 	createUser()
 	defer destroyUser()
 	userResponse, _ := models.SignIn(userSignIn)
-	tokenString :=  userResponse.Token
+	tokenString := userResponse.Token
 	email, err := auth.GetEmailFromTokenString(tokenString)
 	if err != nil {
 		t.Fatalf("%s", err.Error())
@@ -112,9 +112,8 @@ func TestGetUser(t *testing.T) {
 	createUser()
 	defer destroyUser()
 	userResponse, _ := models.SignIn(userSignIn)
-	tokenString :=  userResponse.Token
+	tokenString := userResponse.Token
 	userResponse, err := models.GetUser(tokenString)
-	fmt.Printf("userResponse %+v", userResponse)
 	if !err.IsOk() {
 		t.Fatalf("could not get user: %s", err.Error())
 	}
@@ -132,7 +131,7 @@ func TestUpdateUser(t *testing.T) {
 	createUser()
 	defer destroyUser()
 	userResponse, _ := models.SignIn(userSignIn)
-	tokenString :=  userResponse.Token
+	tokenString := userResponse.Token
 
 	userName := "asdasd"
 	userUpdate := models.UserUpdate{
@@ -154,4 +153,23 @@ func TestUpdateUser(t *testing.T) {
 		t.Fatalf("user update response token is invalid: %s", validateError.Error())
 	}
 
+}
+
+func TestGetProfile(t *testing.T) {
+	initDb()
+	defer DB.Close()
+	createUser()
+	defer destroyUser()
+	userResponse, _ := models.SignIn(userSignIn)
+	tokenString := userResponse.Token
+	profile, err := models.GetProfile(userCreate.Username, tokenString)
+	if !err.IsOk() {
+		t.Fatalf("could not get profile")
+	}
+	if profile.Following {
+		t.Fatalf("profile should not be following himself after signup")
+	}
+	if profile.Username != userCreate.Username {
+		t.Fatalf("profile username %s is not the same as user's %s", profile.Username, userCreate.Username)
+	}
 }

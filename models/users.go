@@ -44,6 +44,19 @@ type UserUpdate struct {
 	Bio      *string `json:"bio"`
 }
 
+type Profile struct {
+	Username  string  `json:"username"`
+	Bio       string  `json:"bio"`
+	Image     *string `json:"image"`
+	Following bool    `json:"following"`
+}
+
+type Follow struct {
+	ID           uint `gorm:"primary_key"`
+	FollowingID  uint
+	FollowedByID uint
+}
+
 func CreateUser(u UserCreate) (UserResponse, *api_errors.E) {
 	user := User{
 		Username:     u.Username,
@@ -88,16 +101,24 @@ func SignIn(u UserSignIn) (UserResponse, *api_errors.E) {
 	}, &api_errors.Ok
 }
 
-func GetUser(token string) (UserResponse, *api_errors.E) {
+func getUser(token string) (User, *api_errors.E) {
 	email, emailErr := auth.GetEmailFromTokenString(token)
 	if emailErr != nil {
-		return UserResponse{}, api_errors.NewError(http.StatusUnauthorized).Add("email", emailErr.Error())
+		return User{}, api_errors.NewError(http.StatusUnauthorized).Add("email", emailErr.Error())
 	}
 	db := DB.Get()
 	var user User
 	dbErr := db.Where(&User{Email: email}).First(&user).Error
 	if dbErr != nil {
-		return UserResponse{}, api_errors.NewError(http.StatusNotFound).Add("email", fmt.Sprintf("could not find user with email %s", email))
+		return User{}, api_errors.NewError(http.StatusNotFound).Add("email", fmt.Sprintf("could not find user with email %s", email))
+	}
+	return user, &api_errors.Ok
+}
+
+func GetUser(token string) (UserResponse, *api_errors.E) {
+	user, err := getUser(token)
+	if !err.IsOk() {
+		return UserResponse{}, err
 	}
 	return UserResponse{
 		Username: user.Username,
@@ -146,5 +167,42 @@ func UpdateUser(userUpdate UserUpdate, token string) (UserResponse, *api_errors.
 		Bio:      user.Bio,
 		Image:    user.Image,
 		Token:    tokenString,
+	}, &api_errors.Ok
+}
+
+func isFollowing(followedByID uint, followingID uint) bool {
+	db := DB.Get()
+	var follow Follow
+	followErr := db.Where(&Follow{FollowedByID: followedByID, FollowingID: followingID}).First(&follow).Error
+	if followErr == nil {
+		return true
+	}
+	return false
+}
+
+// If request is not authenticated with token, pass empty string as token and profile's follow will be false
+func GetProfile(username string, token string) (Profile, *api_errors.E) {
+	db := DB.Get()
+
+	// TODO parallel
+	var user User
+	dbErr := db.Where(&User{Username: username}).First(&user).Error
+	if dbErr != nil {
+		return Profile{}, api_errors.NewError(404).Add("username", fmt.Sprintf("could not find user with this username: %s", username))
+	}
+
+	following := false
+	if token != "" {
+		follower, followerErr := getUser(token)
+		if followerErr.IsOk() {
+			following = isFollowing(follower.ID, user.ID)
+		}
+	}
+
+	return Profile{
+		Username:  user.Username,
+		Bio:       user.Bio,
+		Image:     user.Image,
+		Following: following,
 	}, &api_errors.Ok
 }

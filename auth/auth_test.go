@@ -1,10 +1,10 @@
 package auth_test
 
 import (
+	"../auth"
 	"fmt"
 	"net/http"
 	"testing"
-	"../auth"
 )
 
 func TestGetTokenString(t *testing.T) {

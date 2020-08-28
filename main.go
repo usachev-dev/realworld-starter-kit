@@ -6,9 +6,9 @@ import (
 	"fmt"
 
 	// TODO убрать зависимость
+	"./auth"
 	"./models"
 	"./utils"
-	"./auth"
 	"log"
 	"time"
 
@@ -19,7 +19,7 @@ import (
 func main() {
 	dbErr := DB.InitPostgres(utils.DbHost(), utils.DbPort(), utils.DbUser(), utils.DbName(), utils.DbPassword())
 	if dbErr != nil {
-		panic(fmt.Sprintf("could not connect to db: %s",dbErr))
+		panic(fmt.Sprintf("could not connect to db: %s", dbErr))
 	}
 	defer DB.Close()
 	router := mux.NewRouter()
