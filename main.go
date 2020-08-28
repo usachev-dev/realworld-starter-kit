@@ -21,7 +21,7 @@ func main() {
 	if dbErr != nil {
 		panic(fmt.Sprintf("could not connect to db: %s", dbErr))
 	}
-	defer log.Fatal(DB.Close())
+	defer DB.Close()
 	router := mux.NewRouter()
 	handlers.UseRoutes(router)
 	models.AutoMigrate()

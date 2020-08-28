@@ -183,12 +183,31 @@ func TestGetProfile(t *testing.T) {
 	tokenString := userResponse.Token
 	profile, err := domain.GetProfile(userCreate.Username, tokenString)
 	if err != nil {
-		t.Fatalf("could not get profile")
+		t.Fatalf("could not get profile: %s", err.Error())
 	}
 	if profile.Following {
 		t.Fatalf("profile should not be following himself after signup")
 	}
 	if profile.Username != userCreate.Username {
 		t.Fatalf("profile username %s is not the same as user's %s", profile.Username, userCreate.Username)
+	}
+}
+
+func TestFollowUser(t *testing.T) {
+	initDb()
+	defer DB.Close()
+	_, uerr := createUser()
+	if uerr != nil {
+		t.Fatal(uerr)
+	}
+	defer destroyUser()
+	userResponse, _ := domain.SignIn(userSignIn)
+	tokenString := userResponse.Token
+	profile, err := domain.FollowUser(userCreate.Username, tokenString)
+	if err != nil {
+		t.Fatalf("could not follow user: %s", err.Error())
+	}
+	if !profile.Following {
+		t.Fatalf("profile should be following after follow")
 	}
 }

@@ -14,4 +14,5 @@ func UseRoutes(r *mux.Router) {
 	authRoutes.Use(AuthRequest)
 	authRoutes.HandleFunc("/user", getUserHandle).Methods(http.MethodGet)
 	authRoutes.HandleFunc("/user", updateUserHandle).Methods(http.MethodPut)
+	authRoutes.HandleFunc("/profiles/{username}/follow", addFollowHandle).Methods(http.MethodPost)
 }
