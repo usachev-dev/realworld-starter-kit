@@ -114,6 +114,7 @@ func TestGetUser(t *testing.T) {
 	userResponse, _ := models.SignIn(userSignIn)
 	tokenString :=  userResponse.Token
 	userResponse, err := models.GetUser(tokenString)
+	fmt.Printf("userResponse %+v", userResponse)
 	if !err.IsOk() {
 		t.Fatalf("could not get user: %s", err.Error())
 	}
