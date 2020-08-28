@@ -206,3 +206,42 @@ func FollowUser(username string, token string) (*Profile, *api_errors.E) {
 
 	return nil, api_errors.NewError(http.StatusInternalServerError).Add("body", "could not follow user")
 }
+
+func UnfollowUser(username string, token string) (*Profile, *api_errors.E) {
+	user, userErr := models.GetUserByUsername(username)
+
+	if userErr != nil {
+		return nil, api_errors.NewError(404).Add("username", fmt.Sprintf("could not find user with this username: %s", username))
+	}
+
+	email, emailErr := auth.GetEmailFromTokenString(token)
+	if emailErr != nil {
+		return nil, api_errors.NewError(401).Add("email", fmt.Sprintf("token invalid"))
+	}
+
+	follower, followerErr := models.GetUser(email)
+	if followerErr != nil {
+		return nil, api_errors.NewError(404).Add("email", fmt.Sprintf("user not found"))
+	}
+
+	profile := Profile{
+		Username:  user.Username,
+		Bio:       user.Bio,
+		Image:     user.Image,
+		Following: false,
+	}
+
+	following := models.IsFollowing(follower.ID, user.ID)
+
+	if !following {
+		return &profile, nil
+	}
+
+	err := models.RemoveFollow(follower.ID, user.ID)
+
+	if err == nil {
+		return &profile, nil
+	}
+
+	return nil, api_errors.NewError(http.StatusInternalServerError).Add("body", "could not follow user")
+}

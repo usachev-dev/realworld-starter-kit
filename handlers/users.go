@@ -177,7 +177,7 @@ func getProfileHandle(w http.ResponseWriter, r *http.Request) {
 	log.Println(w.Write(respToByte(profile, "profile")))
 }
 
-func addFollowHandle(w http.ResponseWriter, r *http.Request) {
+func followHandle(w http.ResponseWriter, r *http.Request) {
 	token, _ := GetTokenFromRequest(r)
 	vars := mux.Vars(r)
 	username := vars["username"]
@@ -186,6 +186,22 @@ func addFollowHandle(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	profile, err := domain.FollowUser(username, token)
+	if err != nil {
+		err.Send(w)
+		return
+	}
+	log.Println(w.Write(respToByte(profile, "profile")))
+}
+
+func unfollowHandle(w http.ResponseWriter, r *http.Request) {
+	token, _ := GetTokenFromRequest(r)
+	vars := mux.Vars(r)
+	username := vars["username"]
+	if username == "" {
+		api_errors.NewError(http.StatusBadRequest).Add("username", "follow request should contain username").Send(w)
+		return
+	}
+	profile, err := domain.UnfollowUser(username, token)
 	if err != nil {
 		err.Send(w)
 		return

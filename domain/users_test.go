@@ -8,6 +8,7 @@ import (
 	"../models"
 	"../utils"
 	"fmt"
+	"log"
 	"testing"
 )
 
@@ -17,6 +18,10 @@ func initDb() {
 		panic(fmt.Sprintf("could not connect to test db: %s", err))
 	}
 	models.AutoMigrate()
+}
+
+func closeDb() {
+	log.Printf("%s", DB.Close())
 }
 
 var userCreate domain.UserCreate = domain.UserCreate{
@@ -40,7 +45,7 @@ func destroyUser() {
 
 func TestCreateUser(t *testing.T) {
 	initDb()
-	defer DB.Close()
+	defer closeDb()
 	r, err := createUser()
 	defer destroyUser()
 	if err != nil {
@@ -53,7 +58,7 @@ func TestCreateUser(t *testing.T) {
 
 func TestSignIn(t *testing.T) {
 	initDb()
-	defer DB.Close()
+	defer closeDb()
 	_, uerr := createUser()
 	if uerr != nil {
 		t.Fatal(uerr)
@@ -77,7 +82,7 @@ func TestSignIn(t *testing.T) {
 
 func TestSignedInUserHasValidToken(t *testing.T) {
 	initDb()
-	defer DB.Close()
+	defer closeDb()
 	_, uerr := createUser()
 	if uerr != nil {
 		t.Fatal(uerr)
@@ -96,7 +101,7 @@ func TestSignedInUserHasValidToken(t *testing.T) {
 
 func TestTokenHasEmail(t *testing.T) {
 	initDb()
-	defer DB.Close()
+	defer closeDb()
 	_, uerr := createUser()
 	if uerr != nil {
 		t.Fatal(uerr)
@@ -118,7 +123,7 @@ func TestTokenHasEmail(t *testing.T) {
 
 func TestGetUser(t *testing.T) {
 	initDb()
-	defer DB.Close()
+	defer closeDb()
 	_, uerr := createUser()
 	if uerr != nil {
 		t.Fatal(uerr)
@@ -140,7 +145,7 @@ func TestGetUser(t *testing.T) {
 
 func TestUpdateUser(t *testing.T) {
 	initDb()
-	defer DB.Close()
+	defer closeDb()
 	_, uerr := createUser()
 	if uerr != nil {
 		t.Fatal(uerr)
@@ -173,7 +178,7 @@ func TestUpdateUser(t *testing.T) {
 
 func TestGetProfile(t *testing.T) {
 	initDb()
-	defer DB.Close()
+	defer closeDb()
 	_, uerr := createUser()
 	if uerr != nil {
 		t.Fatal(uerr)
@@ -195,7 +200,7 @@ func TestGetProfile(t *testing.T) {
 
 func TestFollowUser(t *testing.T) {
 	initDb()
-	defer DB.Close()
+	defer closeDb()
 	_, uerr := createUser()
 	if uerr != nil {
 		t.Fatal(uerr)
@@ -209,5 +214,24 @@ func TestFollowUser(t *testing.T) {
 	}
 	if !profile.Following {
 		t.Fatalf("profile should be following after follow")
+	}
+}
+
+func TestUnfollowUser(t *testing.T) {
+	initDb()
+	defer closeDb()
+	_, uerr := createUser()
+	if uerr != nil {
+		t.Fatal(uerr)
+	}
+	defer destroyUser()
+	userResponse, _ := domain.SignIn(userSignIn)
+	tokenString := userResponse.Token
+	profile, err := domain.UnfollowUser(userCreate.Username, tokenString)
+	if err != nil {
+		t.Fatalf("could not unfollow user: %s", err.Error())
+	}
+	if profile.Following {
+		t.Fatalf("profile should not be following after follow")
 	}
 }

@@ -2,6 +2,8 @@ package models
 
 import (
 	"../DB"
+	"errors"
+	"github.com/jinzhu/gorm"
 )
 
 type User struct {
@@ -69,4 +71,18 @@ func AddFollow(followedByID uint, followingID uint) error {
 		return err
 	}
 	return nil
+}
+
+func RemoveFollow(followedByID uint, followingID uint) error {
+	db := DB.Get()
+	follow := Follow{
+		FollowingID:  followingID,
+		FollowedByID: followedByID,
+	}
+	err := db.Delete(&follow).Where(&follow).Error
+	if err != nil || errors.Is(err, gorm.ErrRecordNotFound) {
+		// if error was because could not find, we report success
+		return nil
+	}
+	return err
 }
