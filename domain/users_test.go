@@ -2,7 +2,6 @@ package domain_test
 
 import (
 	"../DB"
-	"../api_errors"
 	"../auth"
 	"../domain"
 	"../models"
@@ -35,8 +34,11 @@ var userSignIn domain.UserSignIn = domain.UserSignIn{
 	Password: userCreate.Password,
 }
 
-func createUser() (domain.UserResponse, *api_errors.E) {
-	return domain.CreateUser(userCreate)
+func createUser(t *testing.T) {
+	_, err := domain.CreateUser(userCreate)
+	if err != nil {
+		t.Fatalf("could not create user: %s", err)
+	}
 }
 
 func destroyUser() {
@@ -46,7 +48,7 @@ func destroyUser() {
 func TestCreateUser(t *testing.T) {
 	initDb()
 	defer closeDb()
-	r, err := createUser()
+	r, err := domain.CreateUser(userCreate)
 	defer destroyUser()
 	if err != nil {
 		t.Fatalf("could not create user: %s", err)
@@ -59,10 +61,7 @@ func TestCreateUser(t *testing.T) {
 func TestSignIn(t *testing.T) {
 	initDb()
 	defer closeDb()
-	_, uerr := createUser()
-	if uerr != nil {
-		t.Fatal(uerr)
-	}
+	createUser(t)
 	defer destroyUser()
 
 	result, err := domain.SignIn(userSignIn)
@@ -83,10 +82,7 @@ func TestSignIn(t *testing.T) {
 func TestSignedInUserHasValidToken(t *testing.T) {
 	initDb()
 	defer closeDb()
-	_, uerr := createUser()
-	if uerr != nil {
-		t.Fatal(uerr)
-	}
+	createUser(t)
 	defer destroyUser()
 
 	userResponse, err := domain.SignIn(userSignIn)
@@ -102,10 +98,7 @@ func TestSignedInUserHasValidToken(t *testing.T) {
 func TestTokenHasEmail(t *testing.T) {
 	initDb()
 	defer closeDb()
-	_, uerr := createUser()
-	if uerr != nil {
-		t.Fatal(uerr)
-	}
+	createUser(t)
 	defer destroyUser()
 	userResponse, _ := domain.SignIn(userSignIn)
 	tokenString := userResponse.Token
@@ -124,10 +117,7 @@ func TestTokenHasEmail(t *testing.T) {
 func TestGetUser(t *testing.T) {
 	initDb()
 	defer closeDb()
-	_, uerr := createUser()
-	if uerr != nil {
-		t.Fatal(uerr)
-	}
+	createUser(t)
 	defer destroyUser()
 	userResponse, _ := domain.SignIn(userSignIn)
 	tokenString := userResponse.Token
@@ -146,10 +136,7 @@ func TestGetUser(t *testing.T) {
 func TestUpdateUser(t *testing.T) {
 	initDb()
 	defer closeDb()
-	_, uerr := createUser()
-	if uerr != nil {
-		t.Fatal(uerr)
-	}
+	createUser(t)
 	defer destroyUser()
 	si, _ := domain.SignIn(userSignIn)
 	tokenString := si.Token
@@ -179,10 +166,7 @@ func TestUpdateUser(t *testing.T) {
 func TestGetProfile(t *testing.T) {
 	initDb()
 	defer closeDb()
-	_, uerr := createUser()
-	if uerr != nil {
-		t.Fatal(uerr)
-	}
+	createUser(t)
 	defer destroyUser()
 	userResponse, _ := domain.SignIn(userSignIn)
 	tokenString := userResponse.Token
@@ -201,10 +185,7 @@ func TestGetProfile(t *testing.T) {
 func TestFollowUser(t *testing.T) {
 	initDb()
 	defer closeDb()
-	_, uerr := createUser()
-	if uerr != nil {
-		t.Fatal(uerr)
-	}
+	createUser(t)
 	defer destroyUser()
 	userResponse, _ := domain.SignIn(userSignIn)
 	tokenString := userResponse.Token
@@ -220,10 +201,7 @@ func TestFollowUser(t *testing.T) {
 func TestUnfollowUser(t *testing.T) {
 	initDb()
 	defer closeDb()
-	_, uerr := createUser()
-	if uerr != nil {
-		t.Fatal(uerr)
-	}
+	createUser(t)
 	defer destroyUser()
 	userResponse, _ := domain.SignIn(userSignIn)
 	tokenString := userResponse.Token
