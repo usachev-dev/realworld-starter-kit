@@ -1,49 +1,10 @@
 package domain_test
 
 import (
-	"../DB"
 	"../auth"
 	"../domain"
-	"../models"
-	"../utils"
-	"fmt"
-	"log"
 	"testing"
 )
-
-func initDb() {
-	err := DB.InitPostgres(utils.DbHost(), utils.DbPort(), utils.DbUser(), utils.DbName(), utils.DbPassword())
-	if err != nil {
-		panic(fmt.Sprintf("could not connect to test db: %s", err))
-	}
-	models.AutoMigrate()
-}
-
-func closeDb() {
-	log.Printf("%s", DB.Close())
-}
-
-var userCreate domain.UserCreate = domain.UserCreate{
-	Email:    "u@u",
-	Password: "fretewrts",
-	Username: "54tersdfg",
-}
-
-var userSignIn domain.UserSignIn = domain.UserSignIn{
-	Email:    userCreate.Email,
-	Password: userCreate.Password,
-}
-
-func createUser(t *testing.T) {
-	_, err := domain.CreateUser(userCreate)
-	if err != nil {
-		t.Fatalf("could not create user: %s", err)
-	}
-}
-
-func destroyUser() {
-	DB.Get().Exec(fmt.Sprintf("DELETE FROM users WHERE email = '%s'", userCreate.Email))
-}
 
 func TestCreateUser(t *testing.T) {
 	initDb()

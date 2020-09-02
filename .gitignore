@@ -20,3 +20,4 @@ Thumbs.db
 dist/*/**
 start.sh
 test.sh
+test_models.sh

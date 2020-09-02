@@ -7,11 +7,11 @@ import (
 )
 
 type User struct {
-	ID           uint    `gorm:"primary_key" json:"id"`
-	Username     string  `gorm:"column:username" json:"username"`
-	Email        string  `gorm:"column:email;unique_index" json:"email"`
-	Bio          string  `gorm:"column:bio;size:1024" json:"bio"`
-	Image        *string `gorm:"column:image" json:"image"`
+	ID           uint    `gorm:"primary_key"`
+	Username     string  `gorm:"column:username"`
+	Email        string  `gorm:"column:email;unique_index"`
+	Bio          string  `gorm:"column:bio;size:1024"`
+	Image        *string `gorm:"column:image"`
 	PasswordHash string  `gorm:"column:password;not null"`
 }
 
@@ -22,7 +22,7 @@ type Follow struct {
 
 func (u *User) Save() error {
 	db := DB.Get()
-	return db.Save(u).Error
+	return db.Save(&u).Error
 }
 
 func GetUser(email string) (*User, error) {
