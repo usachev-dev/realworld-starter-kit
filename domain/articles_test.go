@@ -52,10 +52,19 @@ func TestFavoriteArticle(t *testing.T) {
 
 	result, err := domain.FavoriteArticle(domain.SlugFromTitle(articleCreate.Title), tokenString)
 	if err != nil {
-		t.Fatalf("could not get article: %s", err)
+		t.Fatalf("could not favorite article: %s", err)
 	}
 
 	if !result.Favorited || result.FavoritesCount == 0 {
 		t.Fatalf("could not favorite an article")
+	}
+
+	unfavor, err2 := domain.UnfavoriteArticle(domain.SlugFromTitle(articleCreate.Title), tokenString)
+	if err2 != nil {
+		t.Fatalf("could not unfavorite article: %s", err)
+	}
+
+	if unfavor.Favorited || unfavor.FavoritesCount != 0 {
+		t.Fatalf("could not unfavorite an article")
 	}
 }

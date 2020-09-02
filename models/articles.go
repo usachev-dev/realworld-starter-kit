@@ -89,6 +89,11 @@ func FavoriteArticle(articleID uint, userID uint) error {
 	return db.Save(&Favorite{ArticleID: articleID, UserID: userID}).Error
 }
 
+func UnFavoriteArticle(articleID uint, userID uint) error {
+	db := DB.Get()
+	return db.Delete(&Favorite{ArticleID: articleID, UserID: userID}).Error
+}
+
 func DeleteArticle(articleID *uint) error {
 	db := DB.Get()
 	err := db.Delete(&Article{}, articleID).Error

@@ -139,12 +139,37 @@ func FavoriteArticle(slug string, tokenString string) (*ArticleResponse, *api_er
 	user, userErr := models.GetUser(email)
 	if userErr != nil {
 		return nil, api_errors.NewError(http.StatusUnauthorized).Add("token", "token invalid")
+	}
 
+	article, articleErr := models.GetArticle(slug)
+	if articleErr != nil {
+		return nil, api_errors.NewError(http.StatusNotFound).Add("slug", articleErr.Error())
 	}
-	article, err := models.GetArticle(slug)
+
+	err := models.FavoriteArticle(article.ID, user.ID)
 	if err != nil {
-		return nil, api_errors.NewError(http.StatusNotFound).Add("slug", err.Error())
+		return nil, api_errors.NewError(http.StatusInternalServerError).Add("article", articleErr.Error())
 	}
-	models.FavoriteArticle(article.ID, user.ID)
+
+	return GetArticle(slug, tokenString)
+}
+
+func UnfavoriteArticle(slug string, tokenString string) (*ArticleResponse, *api_errors.E) {
+	email, _ := auth.GetEmailFromTokenString(tokenString)
+	user, userErr := models.GetUser(email)
+	if userErr != nil {
+		return nil, api_errors.NewError(http.StatusUnauthorized).Add("token", "token invalid")
+	}
+
+	article, articleErr := models.GetArticle(slug)
+	if articleErr != nil {
+		return nil, api_errors.NewError(http.StatusNotFound).Add("slug", articleErr.Error())
+	}
+
+	err := models.UnFavoriteArticle(article.ID, user.ID)
+	if err != nil {
+		return nil, api_errors.NewError(http.StatusInternalServerError).Add("article", articleErr.Error())
+	}
+
 	return GetArticle(slug, tokenString)
 }
