@@ -173,3 +173,27 @@ func UnfavoriteArticle(slug string, tokenString string) (*ArticleResponse, *api_
 
 	return GetArticle(slug, tokenString)
 }
+
+func DeleteArticle(slug string, tokenString string) *api_errors.E {
+	email, _ := auth.GetEmailFromTokenString(tokenString)
+	user, userErr := models.GetUser(email)
+	if userErr != nil {
+		return api_errors.NewError(http.StatusUnauthorized).Add("token", "token invalid")
+	}
+
+	article, articleErr := models.GetArticle(slug)
+	if articleErr != nil {
+		return api_errors.NewError(http.StatusNotFound).Add("slug", articleErr.Error())
+	}
+
+	if article.AuthorID != user.ID {
+		return api_errors.NewError(http.StatusForbidden).Add("token", "Cannot delete articles of other users")
+	}
+
+	err := models.DeleteArticle(article.ID)
+	if err != nil {
+		return api_errors.NewError(http.StatusInternalServerError).Add("article", err.Error())
+	}
+
+	return nil
+}
