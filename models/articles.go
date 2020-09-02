@@ -20,6 +20,11 @@ type Tag struct {
 	Name      string
 }
 
+type Favorite struct {
+	ArticleID uint
+	UserID    uint
+}
+
 func CreateArticle(a *Article, tags []string) (*Article, error) {
 	db := DB.Get()
 	err := db.Transaction(func(tx *gorm.DB) error {
@@ -67,8 +72,25 @@ func GetArticle(slug string) (*Article, error) {
 	return &a, nil
 }
 
-func DeleteArticle(a *Article) error {
+func IsArticleFavorited(articleID uint, userID uint) bool {
 	db := DB.Get()
-	err := db.Delete(&a).Error
+	count := db.Where(&Favorite{ArticleID: articleID, UserID: userID}).Find(&[]Favorite{}).RowsAffected
+	return count > 0
+}
+
+func GetFavoriteCount(articleID uint) uint {
+	db := DB.Get()
+	count := uint(db.Where(&Favorite{ArticleID: articleID}).Find(&[]Favorite{}).RowsAffected)
+	return count
+}
+
+func FavoriteArticle(articleID uint, userID uint) error {
+	db := DB.Get()
+	return db.Save(&Favorite{ArticleID: articleID, UserID: userID}).Error
+}
+
+func DeleteArticle(articleID *uint) error {
+	db := DB.Get()
+	err := db.Delete(&Article{}, articleID).Error
 	return err
 }
