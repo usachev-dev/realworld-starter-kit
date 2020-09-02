@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
+	"time"
 )
 
 type ArticleCreate struct {
@@ -27,6 +28,10 @@ type ArticleResponse struct {
 	Favorited      bool     `json:"favorited"`
 	FavoritesCount uint     `json:"favoritesCount"`
 	Author         Profile  `json:"author"`
+}
+
+func formatTime(t time.Time) string {
+	return t.UTC().Format("2006-01-02T15:04:05.999Z")
 }
 
 func SlugFromTitle(title string) string {
@@ -87,8 +92,8 @@ func CreateArticle(articleCreate ArticleCreate, tokenString string) (*ArticleRes
 		Description:    article.Description,
 		Body:           article.Body,
 		TagList:        *tagsToTagList(*tags),
-		CreatedAt:      article.CreatedAt.String(),
-		UpdatedAt:      article.UpdatedAt.String(),
+		CreatedAt:      formatTime(article.CreatedAt),
+		UpdatedAt:      formatTime(article.UpdatedAt),
 		Favorited:      false,
 		FavoritesCount: 0,
 		Author:         *authorProfile,
@@ -126,8 +131,8 @@ func GetArticle(slug string, tokenString string) (*ArticleResponse, *api_errors.
 		Description:    article.Description,
 		Body:           article.Body,
 		TagList:        *tagsToTagList(*tags),
-		CreatedAt:      article.CreatedAt.String(),
-		UpdatedAt:      article.UpdatedAt.String(),
+		CreatedAt:      formatTime(article.CreatedAt),
+		UpdatedAt:      formatTime(article.UpdatedAt),
 		Favorited:      favorited,
 		FavoritesCount: models.GetFavoriteCount(article.ID),
 		Author:         *authorProfile,
