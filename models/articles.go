@@ -28,16 +28,16 @@ type Favorite struct {
 func CreateArticle(a *Article, tags []string) (*Article, error) {
 	db := DB.Get()
 	err := db.Transaction(func(tx *gorm.DB) error {
-		saveErr := db.Omit("Author").Create(&a).Error
+		saveErr := tx.Omit("Author").Create(&a).Error
 		if saveErr != nil {
 			return saveErr
 		}
-		getErr := db.Where(&a).Preload("Author").First(&a).Error
+		getErr := tx.Where(&a).Preload("Author").First(&a).Error
 		if getErr != nil {
 			return getErr
 		}
 		for _, tag := range tags {
-			tagErr := db.Create(&Tag{ArticleID: a.ID, Name: tag}).Error
+			tagErr := tx.Create(&Tag{ArticleID: a.ID, Name: tag}).Error
 			if tagErr != nil {
 				return tagErr
 			}
@@ -96,6 +96,52 @@ func UnFavoriteArticle(articleID uint, userID uint) error {
 
 func DeleteArticle(articleID uint) error {
 	db := DB.Get()
-	err := db.Delete(&Article{}, articleID).Error
-	return err
+	return db.Transaction(func(tx *gorm.DB) error {
+		err := tx.Delete(&Article{}, articleID).Error
+		if err != nil {
+			return err
+		}
+		tagRmErr := tx.Where(&Tag{ArticleID: articleID}).Delete(&Tag{}).Error
+		if tagRmErr != nil {
+			return tagRmErr
+		}
+		favRmErr := tx.Where(&Favorite{ArticleID: articleID}).Delete(&Favorite{}).Error
+		if favRmErr != nil {
+			return favRmErr
+		}
+		return nil
+	})
+}
+
+func UpdateArticle(slug string, a *Article, tags []string) (*Article, error) {
+	db := DB.Get()
+	var article Article
+	getErr := db.Where(&Article{Slug: slug}).First(&article).Error
+	if getErr != nil {
+		return nil, getErr
+	}
+	// TODO remove mutation
+	// If updated without ID, it tries to insert
+	a.ID = article.ID
+	err := db.Transaction(func(tx *gorm.DB) error {
+		saveErr := tx.Save(a).First(&article).Error
+		if saveErr != nil {
+			return saveErr
+		}
+		tagRmErr := tx.Where(&Tag{ArticleID: article.ID}).Delete(&Tag{}).Error
+		if tagRmErr != nil {
+			return tagRmErr
+		}
+		for _, tag := range tags {
+			tagErr := tx.Create(&Tag{ArticleID: article.ID, Name: tag}).Error
+			if tagErr != nil {
+				return tagErr
+			}
+		}
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+	return &article, nil
 }

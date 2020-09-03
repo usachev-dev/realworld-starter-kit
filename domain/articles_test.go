@@ -1,6 +1,7 @@
 package domain_test
 
 import (
+	"../DB"
 	"../domain"
 	"testing"
 )
@@ -90,5 +91,34 @@ func TestDeleteArticle(t *testing.T) {
 	result, rErr := domain.GetArticle(domain.SlugFromTitle(articleCreate.Title), "")
 	if result != nil || rErr == nil {
 		t.Fatalf("deleted article returned")
+	}
+}
+
+func TestUpdateArticle(t *testing.T) {
+	initDb()
+	defer closeDb()
+	createArticle(t)
+	defer destroyArticle()
+	userResponse, _ := domain.SignIn(userSignIn)
+	tokenString := userResponse.Token
+	update := map[string]interface{}{
+		"title":       "newtitle",
+		"tagList":     []string{"newtag"},
+		"body":        "",
+		"description": "",
+	}
+
+	result, err := domain.UpdateArticle(domain.SlugFromTitle(articleCreate.Title), update, tokenString)
+	defer func() {
+		DB.Get().Exec("DELETE FROM articles WHERE title = 'newtitle'")
+	}()
+	if err != nil {
+		t.Fatalf("could not update article: %s", err.Error())
+	}
+	if result.Title != update["title"].(string) {
+		t.Fatalf("article title did not update: %s, %s", result.Title, update["title"].(string))
+	}
+	if len(result.TagList) != 1 || result.TagList[0] != "newtag" {
+		t.Fatalf("taglist did not properly update, %+v", result.TagList)
 	}
 }

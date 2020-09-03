@@ -76,36 +76,10 @@ func CreateArticle(articleCreate ArticleCreate, tokenString string) (*ArticleRes
 		return nil, api_errors.NewError(http.StatusUnprocessableEntity).Add("article", err.Error())
 	}
 
-	tags, tagErr := models.GetTagsForArticle(article.ID)
-	if tagErr != nil {
-		return nil, api_errors.NewError(http.StatusInternalServerError).Add("tags", tagErr.Error())
-	}
-
-	authorProfile, authorErr := GetProfile(article.Author.Username, tokenString)
-	if authorErr != nil {
-		return nil, api_errors.NewError(http.StatusInternalServerError).Add("author", authorErr.Error())
-	}
-
-	return &ArticleResponse{
-		Slug:           article.Slug,
-		Title:          article.Title,
-		Description:    article.Description,
-		Body:           article.Body,
-		TagList:        *tagsToTagList(*tags),
-		CreatedAt:      formatTime(article.CreatedAt),
-		UpdatedAt:      formatTime(article.UpdatedAt),
-		Favorited:      false,
-		FavoritesCount: 0,
-		Author:         *authorProfile,
-	}, nil
+	return articleToResponse(article, tokenString)
 }
 
-func GetArticle(slug string, tokenString string) (*ArticleResponse, *api_errors.E) {
-	article, err := models.GetArticle(slug)
-	if err != nil {
-		return nil, api_errors.NewError(http.StatusNotFound).Add("slug", err.Error())
-	}
-
+func articleToResponse(article *models.Article, tokenString string) (*ArticleResponse, *api_errors.E) {
 	tags, tagErr := models.GetTagsForArticle(article.ID)
 	if tagErr != nil {
 		return nil, api_errors.NewError(http.StatusInternalServerError).Add("tagList", tagErr.Error())
@@ -137,6 +111,14 @@ func GetArticle(slug string, tokenString string) (*ArticleResponse, *api_errors.
 		FavoritesCount: models.GetFavoriteCount(article.ID),
 		Author:         *authorProfile,
 	}, nil
+}
+
+func GetArticle(slug string, tokenString string) (*ArticleResponse, *api_errors.E) {
+	article, err := models.GetArticle(slug)
+	if err != nil {
+		return nil, api_errors.NewError(http.StatusNotFound).Add("slug", err.Error())
+	}
+	return articleToResponse(article, tokenString)
 }
 
 func FavoriteArticle(slug string, tokenString string) (*ArticleResponse, *api_errors.E) {
@@ -199,6 +181,77 @@ func DeleteArticle(slug string, tokenString string) *api_errors.E {
 	if err != nil {
 		return api_errors.NewError(http.StatusInternalServerError).Add("article", err.Error())
 	}
-
 	return nil
+}
+
+func isString(v interface{}) bool {
+	if v == nil {
+		return false
+	}
+	switch v.(type) {
+	case string:
+		return true
+	default:
+		return false
+	}
+}
+
+func isStrSlice(v interface{}) bool {
+	if v == nil {
+		return false
+	}
+	switch v.(type) {
+	case []string:
+		return true
+	default:
+		return false
+	}
+}
+
+func UpdateArticle(slug string, updateData map[string]interface{}, tokenString string) (*ArticleResponse, *api_errors.E) {
+	email, emErr := auth.GetEmailFromTokenString(tokenString)
+	if emErr != nil {
+		return nil, api_errors.NewError(http.StatusUnauthorized).Add("token", "invalid token")
+	}
+
+	user, uErr := models.GetUser(email)
+	if uErr != nil {
+		return nil, api_errors.NewError(http.StatusNotFound).Add("user", "user not found")
+	}
+
+	article, articleErr := models.GetArticle(slug)
+	if articleErr != nil {
+		return nil, api_errors.NewError(http.StatusNotFound).Add("slug", articleErr.Error())
+	}
+
+	if article.AuthorID != user.ID {
+		return nil, api_errors.NewError(http.StatusForbidden).Add("token", "Cannot update articles of other users")
+	}
+
+	update := ArticleCreate{}
+	if isString(updateData["title"]) {
+		update.Title = updateData["title"].(string)
+	}
+	if isString(updateData["body"]) {
+		update.Body = updateData["body"].(string)
+	}
+	if isString(updateData["description"]) {
+		update.Description = updateData["description"].(string)
+	}
+	if isStrSlice(updateData["tagList"]) {
+		update.TagList = updateData["tagList"].([]string)
+	}
+
+	result, err := models.UpdateArticle(slug, &models.Article{
+		Title:       update.Title,
+		Body:        update.Body,
+		Description: update.Description,
+		AuthorID:    user.ID,
+		Slug:        SlugFromTitle(update.Title),
+	}, update.TagList)
+	if err != nil {
+		return nil, api_errors.NewError(http.StatusUnprocessableEntity).Add("article", err.Error())
+	}
+
+	return articleToResponse(result, tokenString)
 }
