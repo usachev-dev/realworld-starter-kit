@@ -227,10 +227,11 @@ func UpdateArticle(slug string, updateData map[string]interface{}, tokenString s
 	if article.AuthorID != user.ID {
 		return nil, api_errors.NewError(http.StatusForbidden).Add("token", "Cannot update articles of other users")
 	}
-
 	update := ArticleCreate{}
+	var slugUpdate string = slug
 	if isString(updateData["title"]) {
 		update.Title = updateData["title"].(string)
+		slugUpdate = SlugFromTitle(update.Title)
 	}
 	if isString(updateData["body"]) {
 		update.Body = updateData["body"].(string)
@@ -238,8 +239,11 @@ func UpdateArticle(slug string, updateData map[string]interface{}, tokenString s
 	if isString(updateData["description"]) {
 		update.Description = updateData["description"].(string)
 	}
+	var tagListUpdate *[]string
+	var tagList []string
 	if isStrSlice(updateData["tagList"]) {
-		update.TagList = updateData["tagList"].([]string)
+		tagList = updateData["tagList"].([]string)
+		tagListUpdate = &tagList
 	}
 
 	result, err := models.UpdateArticle(slug, &models.Article{
@@ -247,8 +251,8 @@ func UpdateArticle(slug string, updateData map[string]interface{}, tokenString s
 		Body:        update.Body,
 		Description: update.Description,
 		AuthorID:    user.ID,
-		Slug:        SlugFromTitle(update.Title),
-	}, update.TagList)
+		Slug:        slugUpdate,
+	}, tagListUpdate)
 	if err != nil {
 		return nil, api_errors.NewError(http.StatusUnprocessableEntity).Add("article", err.Error())
 	}

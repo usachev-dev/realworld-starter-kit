@@ -113,7 +113,7 @@ func DeleteArticle(articleID uint) error {
 	})
 }
 
-func UpdateArticle(slug string, a *Article, tags []string) (*Article, error) {
+func UpdateArticle(slug string, a *Article, tags *[]string) (*Article, error) {
 	db := DB.Get()
 	var article Article
 	getErr := db.Where(&Article{Slug: slug}).First(&article).Error
@@ -128,14 +128,16 @@ func UpdateArticle(slug string, a *Article, tags []string) (*Article, error) {
 		if saveErr != nil {
 			return saveErr
 		}
-		tagRmErr := tx.Where(&Tag{ArticleID: article.ID}).Delete(&Tag{}).Error
-		if tagRmErr != nil {
-			return tagRmErr
-		}
-		for _, tag := range tags {
-			tagErr := tx.Create(&Tag{ArticleID: article.ID, Name: tag}).Error
-			if tagErr != nil {
-				return tagErr
+		if tags != nil {
+			tagRmErr := tx.Where(&Tag{ArticleID: article.ID}).Delete(&Tag{}).Error
+			if tagRmErr != nil {
+				return tagRmErr
+			}
+			for _, tag := range *tags {
+				tagErr := tx.Create(&Tag{ArticleID: article.ID, Name: tag}).Error
+				if tagErr != nil {
+					return tagErr
+				}
 			}
 		}
 		return nil
