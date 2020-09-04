@@ -349,3 +349,22 @@ func ListArticles(tag *string, authorUsername *string, favoriteByUsername *strin
 	return articlesListToResponse(*list, userID), count, nil
 
 }
+
+func FeedArticles(limit uint, offset uint, tokenString string) (*[]ArticleResponse, uint, *api_errors.E) {
+	if limit == 0 {
+		limit = 20
+	}
+
+	email, _ := auth.GetEmailFromTokenString(tokenString)
+	user, uErr := models.GetUser(email)
+	if uErr != nil {
+		return nil, 0, api_errors.NewError(http.StatusUnauthorized).Add("token", "token invalid")
+	}
+
+	result, count, err := models.FeedArticles(limit, offset, user.ID)
+	if err != nil {
+		return nil, 0, api_errors.NewError(http.StatusInternalServerError).Add("articles", err.Error())
+	}
+
+	return articlesListToResponse(*result, user.ID), count, nil
+}

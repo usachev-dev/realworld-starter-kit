@@ -150,6 +150,7 @@ func setupListArticles(t *testing.T) string /* token */ {
 	}, tokenString)
 
 	domain.FavoriteArticle("t2", tokenString)
+	domain.FollowUser(userResponse.Username, tokenString)
 
 	return tokenString
 }
@@ -252,6 +253,25 @@ func TestListAllArticles(t *testing.T) {
 
 	if err != nil {
 		t.Fatalf("could not list articles: %s", err)
+	}
+
+	if len(*result) != int(count) {
+		t.Fatalf("wrong article count, expected %d, got %d", len(*result), count)
+	}
+
+	if len(*result) != 3 {
+		t.Fatalf("expected 3 articles total, got %d", len(*result))
+	}
+}
+
+func TestFeedArticles(t *testing.T) {
+	token := setupListArticles(t)
+	defer tearDownListArticles()
+
+	result, count, err := domain.FeedArticles(0, 0, token)
+
+	if err != nil {
+		t.Fatalf("could not feed articles: %s", err)
 	}
 
 	if len(*result) != int(count) {

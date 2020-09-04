@@ -192,7 +192,9 @@ func ListArticles(tag string, authorID uint, favoritedByID uint, limit uint, off
 
 	dataQuery := "SELECT * " +
 		fmt.Sprintf("FROM (SELECT *, id as articleID FROM articles LIMIT %d OFFSET %d) as articles ", limit, offset) +
-		query
+		query //+
+		//" ORDER BY articles.created_at DESC"
+		// TODO
 
 	err := db.Raw(dataQuery).Scan(&result).Error
 	if err != nil {
@@ -209,6 +211,59 @@ func ListArticles(tag string, authorID uint, favoritedByID uint, limit uint, off
 	cErr := db.Raw(countQuery).Scan(&rowCount).Error
 	if cErr != nil {
 		return nil, 0, err
+	}
+
+	return &result, uint(rowCount.Count), nil
+}
+
+func FeedArticles(limit uint, offset uint, userID uint) (*[]ArticlesList, uint, error) {
+	db := DB.Get()
+	type FollowedUser struct {
+		ID uint
+	}
+	var followedUsers []FollowedUser
+	userQuery := fmt.Sprintf("SELECT following_id as ID FROM follows WHERE followed_by_id = %d ", userID)
+	uErr := db.Raw(userQuery).Scan(&followedUsers).Error
+	if uErr != nil {
+		return nil, 0, uErr
+	}
+
+	values := "("
+	// his own articles are always in the feed
+	values = values + fmt.Sprintf("%d", userID)
+	if len(followedUsers) > 0 {
+		values = values + ","
+	}
+	for i, u := range followedUsers {
+		values = values + fmt.Sprintf("%d", u.ID)
+		if i < len(followedUsers)-1 {
+			values = values + ","
+		}
+	}
+	values = values + ")"
+
+	query := fmt.Sprintf("FROM (SELECT *, id as articleID FROM articles WHERE author_id in %s LIMIT %d OFFSET %d) AS articles ", values, limit, offset) +
+		"LEFT JOIN tags on tags.article_id = articles.id " +
+		"LEFT JOIN users on users.id = articles.author_id " +
+		fmt.Sprintf("LEFT JOIN favorites on favorites.article_id = articles.id and favorites.user_id = %d ", userID)
+
+	dataQuery := "SELECT * " + query + " ORDER BY created_at DESC"
+
+	var result []ArticlesList
+	err := db.Raw(dataQuery).Scan(&result).Error
+	if err != nil {
+		return nil, 0, err
+	}
+
+	countQuery := "SELECT COUNT ( DISTINCT articleID ) AS Count " + query
+	type Count struct {
+		Count int
+	}
+	var rowCount Count
+	cErr := db.Raw(countQuery).Scan(&rowCount).Error
+
+	if cErr != nil {
+		return nil, 0, cErr
 	}
 
 	return &result, uint(rowCount.Count), nil

@@ -200,5 +200,35 @@ func listArticlesHandle(w http.ResponseWriter, r *http.Request) {
 		err.Send(w)
 		return
 	}
-	newResponse().addField("articles", *result).addField("articlesCount", count).print().send(w)
+	newResponse().addField("articles", *result).addField("articlesCount", count).send(w)
+}
+
+func feedArticlesHandle(w http.ResponseWriter, r *http.Request) {
+	token, _ := GetTokenFromRequest(r)
+	vars := mux.Vars(r)
+
+	var limit uint = 0
+	if _, found := vars["limit"]; found {
+		f, _ := vars["limit"]
+		scan, err := strconv.ParseInt(f, 0, 64)
+		if err == nil {
+			limit = uint(scan)
+		}
+	}
+	var offset uint = 0
+	if _, found := vars["offset"]; found {
+		o, _ := vars["offset"]
+		scan, err := strconv.ParseInt(o, 0, 64)
+		if err == nil {
+			offset = uint(scan)
+		}
+	}
+
+	result, count, err := domain.FeedArticles(limit, offset, token)
+
+	if err != nil {
+		err.Send(w)
+		return
+	}
+	newResponse().addField("articles", *result).addField("articlesCount", count).send(w)
 }
