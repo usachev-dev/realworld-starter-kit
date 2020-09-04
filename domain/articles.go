@@ -303,7 +303,7 @@ func articlesListToResponse(list []models.ArticlesList, userID uint) *[]ArticleR
 
 }
 
-func ListArticles(tag *string, authorUsername *string, favoriteByUsername *string, limit uint, offset uint, tokenString string) (*[]ArticleResponse, *api_errors.E) {
+func ListArticles(tag *string, authorUsername *string, favoriteByUsername *string, limit uint, offset uint, tokenString string) (*[]ArticleResponse, uint, *api_errors.E) {
 	tagFilter := ""
 	var authorID uint = 0
 	var favoredById uint = 0
@@ -320,7 +320,7 @@ func ListArticles(tag *string, authorUsername *string, favoriteByUsername *strin
 	if authorUsername != nil {
 		author, aErr := models.GetUserByUsername(*authorUsername)
 		if aErr != nil {
-			return nil, api_errors.NewError(http.StatusNotFound).Add("author", fmt.Sprintf("author with username %s not found", *authorUsername))
+			return nil, 0, api_errors.NewError(http.StatusNotFound).Add("author", fmt.Sprintf("author with username %s not found", *authorUsername))
 		}
 		authorID = author.ID
 	}
@@ -328,7 +328,7 @@ func ListArticles(tag *string, authorUsername *string, favoriteByUsername *strin
 	if favoriteByUsername != nil {
 		favored, fErr := models.GetUserByUsername(*favoriteByUsername)
 		if fErr != nil {
-			return nil, api_errors.NewError(http.StatusNotFound).Add("favorited", fmt.Sprintf("user with username %s not found", *favoriteByUsername))
+			return nil, 0, api_errors.NewError(http.StatusNotFound).Add("favorited", fmt.Sprintf("user with username %s not found", *favoriteByUsername))
 		}
 		favoredById = favored.ID
 	}
@@ -341,11 +341,11 @@ func ListArticles(tag *string, authorUsername *string, favoriteByUsername *strin
 		}
 	}
 
-	list, listErr := models.ListArticles(tagFilter, authorID, favoredById, limit, offset, userID)
+	list, count, listErr := models.ListArticles(tagFilter, authorID, favoredById, limit, offset, userID)
 	if listErr != nil {
-		return nil, api_errors.NewError(http.StatusInternalServerError).Add("articles", listErr.Error())
+		return nil, 0, api_errors.NewError(http.StatusInternalServerError).Add("articles", listErr.Error())
 	}
 
-	return articlesListToResponse(*list, userID), nil
+	return articlesListToResponse(*list, userID), count, nil
 
 }

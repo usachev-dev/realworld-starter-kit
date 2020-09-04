@@ -164,10 +164,14 @@ func TestListArticlesByTag(t *testing.T) {
 	defer tearDownListArticles()
 
 	tag := "t1"
-	result, err := domain.ListArticles(&tag, nil, nil, 0, 0, token)
+	result, count, err := domain.ListArticles(&tag, nil, nil, 0, 0, token)
 
 	if err != nil {
 		t.Fatalf("could not list articles: %s", err)
+	}
+
+	if len(*result) != int(count) {
+		t.Fatalf("wrong article count, expected %d, got %d", len(*result), count)
 	}
 
 	if len(*result) != 2 {
@@ -184,10 +188,14 @@ func TestListArticlesByFav(t *testing.T) {
 	defer tearDownListArticles()
 
 	userName := userCreate.Username
-	result, err := domain.ListArticles(nil, nil, &userName, 0, 0, token)
+	result, count, err := domain.ListArticles(nil, nil, &userName, 0, 0, token)
 
 	if err != nil {
 		t.Fatalf("could not list articles: %s", err)
+	}
+
+	if len(*result) != int(count) {
+		t.Fatalf("wrong article count, expected %d, got %d", len(*result), count)
 	}
 
 	if len(*result) != 1 {
@@ -201,10 +209,14 @@ func TestListArticlesByTagAndFav(t *testing.T) {
 
 	userName := userCreate.Username
 	tag := "t3"
-	result, err := domain.ListArticles(&tag, nil, &userName, 0, 0, token)
+	result, count, err := domain.ListArticles(&tag, nil, &userName, 0, 0, token)
 
 	if err != nil {
 		t.Fatalf("could not list articles: %s", err)
+	}
+
+	if len(*result) != int(count) {
+		t.Fatalf("wrong article count, expected %d, got %d", len(*result), count)
 	}
 
 	if len(*result) != 0 {
@@ -217,13 +229,36 @@ func TestListArticlesByAuthor(t *testing.T) {
 	defer tearDownListArticles()
 
 	userName := userCreate.Username
-	result, err := domain.ListArticles(nil, &userName, nil, 0, 0, token)
+	result, count, err := domain.ListArticles(nil, &userName, nil, 0, 0, token)
 
 	if err != nil {
 		t.Fatalf("could not list articles: %s", err)
 	}
 
+	if len(*result) != int(count) {
+		t.Fatalf("wrong article count, expected %d, got %d", len(*result), count)
+	}
+
 	if len(*result) != 3 {
 		t.Fatalf("expected 3 by author %s, got %d", userName, len(*result))
+	}
+}
+
+func TestListAllArticles(t *testing.T) {
+	token := setupListArticles(t)
+	defer tearDownListArticles()
+
+	result, count, err := domain.ListArticles(nil, nil, nil, 0, 0, token)
+
+	if err != nil {
+		t.Fatalf("could not list articles: %s", err)
+	}
+
+	if len(*result) != int(count) {
+		t.Fatalf("wrong article count, expected %d, got %d", len(*result), count)
+	}
+
+	if len(*result) != 3 {
+		t.Fatalf("expected 3 articles total, got %d", len(*result))
 	}
 }

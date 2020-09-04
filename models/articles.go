@@ -156,16 +156,15 @@ func UpdateArticle(slug string, a *Article, tags *[]string) (*Article, error) {
 	return &article, nil
 }
 
-func ListArticles(tag string, authorID uint, favoritedByID uint, limit uint, offset uint, userID uint) (*[]ArticlesList, error) {
+func ListArticles(tag string, authorID uint, favoritedByID uint, limit uint, offset uint, userID uint) (*[]ArticlesList, uint, error) {
 	db := DB.Get()
 
 	var result []ArticlesList
 
-	query := "SELECT * " +
-		fmt.Sprintf("FROM (SELECT * FROM articles LIMIT %d OFFSET %d) as articles ", limit, offset) +
+	query :=
 		"LEFT JOIN tags on tags.article_id = articles.id " +
-		"LEFT JOIN users on users.id = articles.author_id " +
-		fmt.Sprintf("LEFT JOIN favorites on favorites.article_id = articles.id and favorites.user_id = %d ", userID)
+			"LEFT JOIN users on users.id = articles.author_id " +
+			fmt.Sprintf("LEFT JOIN favorites on favorites.article_id = articles.id and favorites.user_id = %d ", userID)
 
 	filter := []string{}
 
@@ -191,10 +190,26 @@ func ListArticles(tag string, authorID uint, favoritedByID uint, limit uint, off
 		}
 	}
 
-	err := db.Raw(query).Scan(&result).Error
+	dataQuery := "SELECT * " +
+		fmt.Sprintf("FROM (SELECT *, id as articleID FROM articles LIMIT %d OFFSET %d) as articles ", limit, offset) +
+		query
 
+	err := db.Raw(dataQuery).Scan(&result).Error
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
-	return &result, nil
+
+	type Count struct {
+		Count int
+	}
+	var rowCount Count
+	countQuery := "SELECT COUNT ( DISTINCT articleID ) AS Count " +
+		"FROM (SELECT id, author_id, id as articleID FROM articles ) as articles " +
+		query
+	cErr := db.Raw(countQuery).Scan(&rowCount).Error
+	if cErr != nil {
+		return nil, 0, err
+	}
+
+	return &result, uint(rowCount.Count), nil
 }

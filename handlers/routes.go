@@ -10,6 +10,7 @@ func UseRoutes(r *mux.Router) {
 	r.HandleFunc("/users/login", signInHandle).Methods(http.MethodPost)
 	r.HandleFunc("/profiles/{username}", getProfileHandle).Methods(http.MethodGet)
 	r.HandleFunc("/articles/{slug}", getArticleHandle).Methods(http.MethodGet)
+	r.HandleFunc("/articles", listArticlesHandle).Methods(http.MethodGet)
 
 	authRoutes := r.NewRoute().Subrouter()
 	authRoutes.Use(AuthRequest)

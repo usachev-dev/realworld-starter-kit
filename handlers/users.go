@@ -63,6 +63,32 @@ func signInRead(r *http.Request) (domain.UserSignIn, *api_errors.E) {
 	return userData, nil
 }
 
+type response map[string]interface{}
+
+func newResponse() *response {
+	return &response{}
+}
+
+func (r *response) addField(field string, value interface{}) *response {
+	(*r)[field] = value
+	return r
+}
+
+func (r *response) toByte() []byte {
+	result, _ := json.Marshal(r)
+	return result
+}
+
+func (r *response) send(w http.ResponseWriter) {
+	result, _ := json.Marshal(r)
+	log.Println(w.Write(result))
+}
+
+func (r *response) print() *response {
+	fmt.Printf("%+v\n\n\n\n", r)
+	return r
+}
+
 func respToByte(value interface{}, field string) []byte {
 	m := map[string]interface{}{field: value}
 	result, _ := json.Marshal(m)
