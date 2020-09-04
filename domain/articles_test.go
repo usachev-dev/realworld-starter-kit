@@ -122,3 +122,108 @@ func TestUpdateArticle(t *testing.T) {
 		t.Fatalf("taglist did not properly update, %+v", result.TagList)
 	}
 }
+
+func setupListArticles(t *testing.T) string /* token */ {
+	initDb()
+	createUser(t)
+	userResponse, _ := domain.SignIn(userSignIn)
+	tokenString := userResponse.Token
+	domain.CreateArticle(domain.ArticleCreate{
+		Title:       "t1",
+		Description: "d1",
+		Body:        "b1",
+		TagList:     []string{"t0", "t1"},
+	}, tokenString)
+
+	domain.CreateArticle(domain.ArticleCreate{
+		Title:       "t2",
+		Description: "d2",
+		Body:        "b2",
+		TagList:     []string{"t1"},
+	}, tokenString)
+
+	domain.CreateArticle(domain.ArticleCreate{
+		Title:       "t3",
+		Description: "d3",
+		Body:        "b3",
+		TagList:     []string{"t2"},
+	}, tokenString)
+
+	domain.FavoriteArticle("t2", tokenString)
+
+	return tokenString
+}
+
+func tearDownListArticles() {
+	DB.Get().Exec("DELETE from articles")
+	destroyUser()
+}
+
+func TestListArticlesByTag(t *testing.T) {
+	token := setupListArticles(t)
+	defer tearDownListArticles()
+
+	tag := "t1"
+	result, err := domain.ListArticles(&tag, nil, nil, 0, 0, token)
+
+	if err != nil {
+		t.Fatalf("could not list articles: %s", err)
+	}
+
+	if len(*result) != 2 {
+		t.Fatalf("expected 2 articles with tag t1, got %d", len(*result))
+	}
+
+	if len((*result)[0].TagList) != 2 {
+		t.Fatalf("expected 2 tags for first element, got %d", len((*result)[0].TagList))
+	}
+}
+
+func TestListArticlesByFav(t *testing.T) {
+	token := setupListArticles(t)
+	defer tearDownListArticles()
+
+	userName := userCreate.Username
+	result, err := domain.ListArticles(nil, nil, &userName, 0, 0, token)
+
+	if err != nil {
+		t.Fatalf("could not list articles: %s", err)
+	}
+
+	if len(*result) != 1 {
+		t.Fatalf("expected 1 article favored by %s, got %d", userName, len(*result))
+	}
+}
+
+func TestListArticlesByTagAndFav(t *testing.T) {
+	token := setupListArticles(t)
+	defer tearDownListArticles()
+
+	userName := userCreate.Username
+	tag := "t3"
+	result, err := domain.ListArticles(&tag, nil, &userName, 0, 0, token)
+
+	if err != nil {
+		t.Fatalf("could not list articles: %s", err)
+	}
+
+	if len(*result) != 0 {
+		t.Fatalf("expected 0 article favored by %s with tag %s, got %d", userName, tag, len(*result))
+	}
+}
+
+func TestListArticlesByAuthor(t *testing.T) {
+	token := setupListArticles(t)
+	defer tearDownListArticles()
+
+	userName := userCreate.Username
+	result, err := domain.ListArticles(nil, &userName, nil, 0, 0, token)
+
+	if err != nil {
+		t.Fatalf("could not list articles: %s", err)
+	}
+
+	if len(*result) != 3 {
+		t.Fatalf("expected 3 by author %s, got %d", userName, len(*result))
+	}
+}

@@ -4,6 +4,7 @@ import (
 	"../api_errors"
 	"../auth"
 	"../models"
+	"fmt"
 	"net/http"
 	"net/url"
 	"strings"
@@ -258,4 +259,93 @@ func UpdateArticle(slug string, updateData map[string]interface{}, tokenString s
 	}
 
 	return articleToResponse(result, tokenString)
+}
+
+func articlesListToResponse(list []models.ArticlesList, userID uint) *[]ArticleResponse {
+	var lastId uint
+	var result []ArticleResponse
+	for _, el := range list {
+		if lastId != el.Article.ID {
+			lastId = el.Article.ID
+			result = append(result, ArticleResponse{
+				Slug:           el.Slug,
+				Title:          el.Title,
+				Description:    el.Description,
+				Body:           el.Body,
+				TagList:        []string{},
+				CreatedAt:      formatTime(el.CreatedAt),
+				UpdatedAt:      formatTime(el.UpdatedAt),
+				Favorited:      false,
+				FavoritesCount: 0,
+				Author: Profile{
+					Username:  el.User.Username,
+					Bio:       el.User.Bio,
+					Image:     el.User.Image,
+					Following: models.IsFollowing(userID, el.User.ID),
+				},
+			})
+		}
+
+		if len(result) > 0 && el.Tag.Name != "" {
+			result[len(result)-1].TagList = append(result[len(result)-1].TagList, el.Tag.Name)
+		}
+
+		if len(result) > 0 && el.Favorite.UserID != 0 {
+			result[len(result)-1].FavoritesCount++
+		}
+
+		if len(result) > 0 && el.Favorite.UserID != 0 && el.Favorite.UserID == userID {
+			result[len(result)-1].Favorited = true
+		}
+	}
+
+	return &result
+
+}
+
+func ListArticles(tag *string, authorUsername *string, favoriteByUsername *string, limit uint, offset uint, tokenString string) (*[]ArticleResponse, *api_errors.E) {
+	tagFilter := ""
+	var authorID uint = 0
+	var favoredById uint = 0
+	var userID uint = 0
+
+	if limit == 0 {
+		limit = 20
+	}
+
+	if tag != nil {
+		tagFilter = *tag
+	}
+
+	if authorUsername != nil {
+		author, aErr := models.GetUserByUsername(*authorUsername)
+		if aErr != nil {
+			return nil, api_errors.NewError(http.StatusNotFound).Add("author", fmt.Sprintf("author with username %s not found", *authorUsername))
+		}
+		authorID = author.ID
+	}
+
+	if favoriteByUsername != nil {
+		favored, fErr := models.GetUserByUsername(*favoriteByUsername)
+		if fErr != nil {
+			return nil, api_errors.NewError(http.StatusNotFound).Add("favorited", fmt.Sprintf("user with username %s not found", *favoriteByUsername))
+		}
+		favoredById = favored.ID
+	}
+
+	if tokenString != "" {
+		email, _ := auth.GetEmailFromTokenString(tokenString)
+		user, uErr := models.GetUser(email)
+		if uErr == nil {
+			userID = user.ID
+		}
+	}
+
+	list, listErr := models.ListArticles(tagFilter, authorID, favoredById, limit, offset, userID)
+	if listErr != nil {
+		return nil, api_errors.NewError(http.StatusInternalServerError).Add("articles", listErr.Error())
+	}
+
+	return articlesListToResponse(*list, userID), nil
+
 }

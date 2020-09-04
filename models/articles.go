@@ -2,6 +2,7 @@ package models
 
 import (
 	"../DB"
+	"fmt"
 	"github.com/jinzhu/gorm"
 )
 
@@ -23,6 +24,13 @@ type Tag struct {
 type Favorite struct {
 	ArticleID uint
 	UserID    uint
+}
+
+type ArticlesList struct {
+	Article
+	User
+	Tag
+	Favorite
 }
 
 func CreateArticle(a *Article, tags []string) (*Article, error) {
@@ -146,4 +154,47 @@ func UpdateArticle(slug string, a *Article, tags *[]string) (*Article, error) {
 		return nil, err
 	}
 	return &article, nil
+}
+
+func ListArticles(tag string, authorID uint, favoritedByID uint, limit uint, offset uint, userID uint) (*[]ArticlesList, error) {
+	db := DB.Get()
+
+	var result []ArticlesList
+
+	query := "SELECT * " +
+		fmt.Sprintf("FROM (SELECT * FROM articles LIMIT %d OFFSET %d) as articles ", limit, offset) +
+		"LEFT JOIN tags on tags.article_id = articles.id " +
+		"LEFT JOIN users on users.id = articles.author_id " +
+		fmt.Sprintf("LEFT JOIN favorites on favorites.article_id = articles.id and favorites.user_id = %d ", userID)
+
+	filter := []string{}
+
+	if tag != "" {
+		filter = append(filter, fmt.Sprintf("'%s' in (SELECT tags.name FROM articles as a JOIN tags on tags.article_id = articles.id WHERE articles.id = a.id)", tag))
+	}
+
+	if authorID != 0 {
+		filter = append(filter, fmt.Sprintf("articles.author_id = %d", authorID))
+	}
+
+	if favoritedByID != 0 {
+		filter = append(filter, fmt.Sprintf("favorites.user_id = %d", favoritedByID))
+	}
+
+	if len(filter) > 0 {
+		query = query + "WHERE "
+		for i, f := range filter {
+			query = query + f + " "
+			if i < len(filter)-1 {
+				query = query + "and "
+			}
+		}
+	}
+
+	err := db.Raw(query).Scan(&result).Error
+
+	if err != nil {
+		return nil, err
+	}
+	return &result, nil
 }
