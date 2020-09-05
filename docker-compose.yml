@@ -1,0 +1,24 @@
+version: '3'
+services:
+  db:
+    image: postgres:13-alpine
+    environment:
+      POSTGRES_PASSWORD: "Y>KU3MD%VW>sHU"
+      POSTGRES_DB: "conduit"
+    expose:
+      - "5432"
+  api:
+    build: .
+    environment:
+      PORT: "4000"
+      HOST: "0.0.0.0"
+      DB_PORT: "5432"
+      DB_HOST: "db"
+      DB_USER: "postgres"
+      DB_NAME: "conduit"
+      DB_PASSWORD: "Y>KU3MD%VW>sHU"
+      SIGNATURE: ",qcFxb^w}h.hjo6y:DG33Ab"
+    ports:
+      - "4000:4000"
+    depends_on:
+      - db

@@ -13,6 +13,15 @@ func Port() string {
 	return p
 }
 
+func Host() string {
+	p := os.Getenv("HOST")
+	if p == "" {
+		p = "0.0.0.0"
+	}
+	p = ":" + p
+	return p
+}
+
 func DbPort() string {
 	p := os.Getenv("DB_PORT")
 	if p == "" {

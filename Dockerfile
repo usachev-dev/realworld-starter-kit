@@ -6,13 +6,10 @@ ENV GOROOT=/usr/local/go
 ENV GOPATH=$HOME/go
 ENV PATH=$PATH:$GOROOT/bin
 ENV GOBIN=$GOPATH/bin
-ENV GIN_MODE=release
-RUN echo ${GOPATH} && echo ${GOROOT} && echo ${PATH} && pwd && go version
 RUN mkdir -p ${GOPATH}/src ${GOPATH}/bin
 RUN go get ./...
-RUN go build
-RUN printf "#!/bin/sh\n/app/app" > ./entrypoint.sh
+RUN go build -o ./dist main.go
+RUN printf "#!/bin/sh\n/app/dist/main" > ./entrypoint.sh
 RUN chmod 777 ./entrypoint.sh
-RUN pwd && ls
 WORKDIR /
 ENTRYPOINT ["/app/entrypoint.sh"]

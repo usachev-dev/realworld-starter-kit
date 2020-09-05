@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"github.com/gorilla/mux"
+	"log"
 	"net/http"
 )
 
@@ -21,6 +22,7 @@ func UseRoutes(r *mux.Router) {
 	authRoutes.HandleFunc("/articles/{slug}/comments", createCommentHandle).Methods(http.MethodPost)
 	authRoutes.HandleFunc("/articles/{slug}/comments/{commentId}", deleteCommentHandle).Methods(http.MethodDelete)
 
+	r.HandleFunc("/ping", ping).Methods(http.MethodGet)
 	r.HandleFunc("/users", createUserHandle).Methods(http.MethodPost)
 	r.HandleFunc("/users/login", signInHandle).Methods(http.MethodPost)
 	r.HandleFunc("/profiles/{username}", getProfileHandle).Methods(http.MethodGet)
@@ -28,5 +30,8 @@ func UseRoutes(r *mux.Router) {
 	r.HandleFunc("/articles", listArticlesHandle).Methods(http.MethodGet)
 	r.HandleFunc("/tags", getAllTagsHandle).Methods(http.MethodGet)
 	r.HandleFunc("/articles/{slug}/comments", getCommentsHandle).Methods(http.MethodGet)
+}
 
+func ping(w http.ResponseWriter, r *http.Request) {
+	log.Println(w.Write([]byte("pong")))
 }

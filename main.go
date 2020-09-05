@@ -26,10 +26,11 @@ func main() {
 	handlers.UseRoutes(router)
 	models.AutoMigrate()
 	SetSignature()
-	p := utils.Port()
+	port := utils.Port()
+	host := utils.Host()
 	srv := &http.Server{
 		Handler:      router,
-		Addr:         "localhost" + p,
+		Addr:         host + port,
 		WriteTimeout: 15 * time.Second,
 		ReadTimeout:  15 * time.Second,
 	}
