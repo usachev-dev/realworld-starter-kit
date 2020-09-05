@@ -24,4 +24,5 @@ func UseRoutes(r *mux.Router) {
 	r.HandleFunc("/profiles/{username}", getProfileHandle).Methods(http.MethodGet)
 	r.HandleFunc("/articles/{slug}", getArticleHandle).Methods(http.MethodGet)
 	r.HandleFunc("/articles", listArticlesHandle).Methods(http.MethodGet)
+	r.HandleFunc("/tags", getAllTagsHandle).Methods(http.MethodGet)
 }

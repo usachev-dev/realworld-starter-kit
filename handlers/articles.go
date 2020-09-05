@@ -232,3 +232,12 @@ func feedArticlesHandle(w http.ResponseWriter, r *http.Request) {
 	}
 	newResponse().addField("articles", *result).addField("articlesCount", count).send(w)
 }
+
+func getAllTagsHandle(w http.ResponseWriter, r *http.Request) {
+	result, err := domain.GetAllTags()
+	if err != nil {
+		err.Send(w)
+		return
+	}
+	newResponse().addField("tags", *result).send(w)
+}

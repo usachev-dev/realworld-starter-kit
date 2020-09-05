@@ -268,3 +268,14 @@ func FeedArticles(limit uint, offset uint, userID uint) (*[]ArticlesList, uint, 
 
 	return &result, uint(rowCount.Count), nil
 }
+
+func GetAllTags() (*[]Tag, error) {
+	db := DB.Get()
+	query := "SELECT DISTINCT name FROM tags"
+	var tags []Tag
+	err := db.Raw(query).Scan(&tags).Error
+	if err != nil {
+		return nil, err
+	}
+	return &tags, nil
+}

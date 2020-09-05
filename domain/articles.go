@@ -368,3 +368,15 @@ func FeedArticles(limit uint, offset uint, tokenString string) (*[]ArticleRespon
 
 	return articlesListToResponse(*result, user.ID), count, nil
 }
+
+func GetAllTags() (*[]string, *api_errors.E) {
+	tags, err := models.GetAllTags()
+	if err != nil {
+		return nil, api_errors.NewError(http.StatusInternalServerError).Add("tags", "could not get tags")
+	}
+	result := []string{}
+	for _, t := range *tags {
+		result = append(result, t.Name)
+	}
+	return &result, nil
+}

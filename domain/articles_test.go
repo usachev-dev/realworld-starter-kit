@@ -282,3 +282,18 @@ func TestFeedArticles(t *testing.T) {
 		t.Fatalf("expected 3 articles total, got %d", len(*result))
 	}
 }
+
+func TestGetAllTags(t *testing.T) {
+	setupListArticles(t)
+	defer tearDownListArticles()
+
+	result, err := domain.GetAllTags()
+
+	if err != nil {
+		t.Fatalf("could not get all tags: %s", err)
+	}
+
+	if len(*result) != 4 {
+		t.Fatalf("expected 3 tags total, got %d: %+v", len(*result), *result)
+	}
+}
