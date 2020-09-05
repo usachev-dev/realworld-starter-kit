@@ -17,11 +17,11 @@ For more information on how to this works with other frontends/backends, head ov
 
 There are three layers: handlers, domain and model.
 
-Handlers layer controls routing and retrieving user inputs: serialization of requests and query parameters. Gorilla mux is used for routing.
+Handlers layer controls routing and retrieving user inputs: serialization of requests and query parameters. [Gorilla mux](https://github.com/gorilla/mux) is used for routing.
 
-Domain layer controls what can be called as our application's core business-logic. Functions are named from user's perspective. Types represent responses that are defined in specs.  There are extensive tests for this layer.
+Domain layer controls our application's core business-logic. Types represent responses that are defined in specs. There are extensive tests for this layer.
 
-Model layer represents how the data is stored persistently. Postgres db is used, with GORM for migrations and some queries. Types represent tables in the database.
+Model layer represents how the data is stored persistently. Postgres db is used, with [GORM](https://gorm.io/index.html) for migrations and some queries. Types represent tables in the database.
 
 There are utils packages for auth, errors and app initialization.
 
