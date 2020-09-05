@@ -301,3 +301,28 @@ func getCommentsHandle(w http.ResponseWriter, r *http.Request) {
 
 	newResponse().addField("comments", *result).send(w)
 }
+
+func deleteCommentHandle(w http.ResponseWriter, r *http.Request) {
+	token, _ := GetTokenFromRequest(r)
+	vars := mux.Vars(r)
+
+	commentId, found := vars["commentId"]
+	if !found {
+		api_errors.NewError(http.StatusBadRequest).Add("commentId", "comments delet request should contain commentId").Send(w)
+		return
+	}
+
+	commentIdInt, convErr := strconv.ParseInt(commentId, 0, 64)
+	if convErr != nil {
+		api_errors.NewError(http.StatusBadRequest).Add("commentId", "commentId should be a number").Send(w)
+		return
+	}
+
+	err := domain.DeleteComment(uint(commentIdInt), token)
+	if err != nil {
+		err.Send(w)
+		return
+	}
+
+	log.Println(w.Write(nil))
+}

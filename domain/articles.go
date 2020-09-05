@@ -448,3 +448,31 @@ func GetCommentsForArticle(slug string, tokenString string) (*[]CommentResponse,
 	}
 	return &result, nil
 }
+
+func DeleteComment(commentID uint, tokenString string) *api_errors.E {
+	email, mailErr := auth.GetEmailFromTokenString(tokenString)
+	if mailErr != nil {
+		return api_errors.NewError(http.StatusUnauthorized).Add("token", "token invalid")
+	}
+
+	user, uErr := models.GetUser(email)
+	if uErr != nil {
+		return api_errors.NewError(http.StatusUnauthorized).Add("token", "token invalid")
+	}
+
+	comment, cErr := models.GetComment(commentID)
+	if cErr != nil {
+		return nil
+	}
+
+	if comment.AuthorID != user.ID {
+		return api_errors.NewError(http.StatusForbidden).Add("author", "can not delete other people's articles")
+	}
+
+	err := models.DeleteComment(commentID)
+	if err != nil {
+		return api_errors.NewError(http.StatusInternalServerError).Add("comment", "could not delete comment")
+	}
+
+	return nil
+}

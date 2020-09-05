@@ -318,3 +318,24 @@ func GetCommentsForArticle(articleID uint) (*[]CommentList, error) {
 	}
 	return &comments, err
 }
+
+func GetComment(commentID uint) (*Comment, error) {
+	db := DB.Get()
+	var comment Comment
+	query := fmt.Sprintf("SELECT * FROM comments WHERE comments.id = %d", commentID)
+	err := db.Raw(query).Scan(&comment).Error
+	if err != nil {
+		return nil, err
+	}
+	return &comment, nil
+}
+
+func DeleteComment(commentID uint) error {
+	db := DB.Get()
+	query := fmt.Sprintf("DELETE FROM comments WHERE comments.id = %d", commentID)
+	err := db.Exec(query).Error
+	if err != nil {
+		return err
+	}
+	return nil
+}

@@ -19,6 +19,7 @@ func UseRoutes(r *mux.Router) {
 	authRoutes.HandleFunc("/articles/{slug}/favorite", favoriteArticleHandle).Methods(http.MethodPost)
 	authRoutes.HandleFunc("/articles/{slug}/favorite", unfavoriteArticleHandle).Methods(http.MethodDelete)
 	authRoutes.HandleFunc("/articles/{slug}/comments", createCommentHandle).Methods(http.MethodPost)
+	authRoutes.HandleFunc("/articles/{slug}/comments/{commentId}", deleteCommentHandle).Methods(http.MethodDelete)
 
 	r.HandleFunc("/users", createUserHandle).Methods(http.MethodPost)
 	r.HandleFunc("/users/login", signInHandle).Methods(http.MethodPost)
