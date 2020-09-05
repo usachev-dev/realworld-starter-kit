@@ -241,3 +241,63 @@ func getAllTagsHandle(w http.ResponseWriter, r *http.Request) {
 	}
 	newResponse().addField("tags", *result).send(w)
 }
+
+func createCommentHandle(w http.ResponseWriter, r *http.Request) {
+	token, _ := GetTokenFromRequest(r)
+	vars := mux.Vars(r)
+
+	slug, found := vars["slug"]
+	if !found {
+		api_errors.NewError(http.StatusBadRequest).Add("slug", "comments request should contain article slug").Send(w)
+		return
+	}
+
+	bytes, readErr := readRequest(r)
+	if readErr != nil {
+		api_errors.NewError(http.StatusBadRequest).Add("body", readErr.Error()).Send(w)
+		return
+	}
+	var requestData map[string]map[string]string
+	sErr := json.Unmarshal(bytes, &requestData)
+	if sErr != nil {
+		api_errors.NewError(http.StatusBadRequest).Add("body", "could not read request json").Send(w)
+		return
+	}
+	comment, commentFound := requestData["comment"]
+	if !commentFound {
+		api_errors.NewError(http.StatusBadRequest).Add("comment", "comment create should contain comment field").Send(w)
+		return
+	}
+	body, bodyFound := comment["body"]
+	if !bodyFound {
+		api_errors.NewError(http.StatusBadRequest).Add("body", "comment create should contain body").Send(w)
+		return
+	}
+
+	result, err := domain.CreateComment(body, slug, token)
+	if err != nil {
+		err.Send(w)
+		return
+	}
+
+	newResponse().addField("comment", *result).send(w)
+}
+
+func getCommentsHandle(w http.ResponseWriter, r *http.Request) {
+	token, _ := GetTokenFromRequest(r)
+	vars := mux.Vars(r)
+
+	slug, found := vars["slug"]
+	if !found {
+		api_errors.NewError(http.StatusBadRequest).Add("slug", "comments request should contain article slug").Send(w)
+		return
+	}
+
+	result, err := domain.GetCommentsForArticle(slug, token)
+	if err != nil {
+		err.Send(w)
+		return
+	}
+
+	newResponse().addField("comments", *result).send(w)
+}

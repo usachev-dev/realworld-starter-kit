@@ -297,3 +297,35 @@ func TestGetAllTags(t *testing.T) {
 		t.Fatalf("expected 3 tags total, got %d: %+v", len(*result), *result)
 	}
 }
+
+func TestCreateComment(t *testing.T) {
+	token := setupListArticles(t)
+	defer tearDownListArticles()
+
+	result, err := domain.CreateComment("Hello comment", "t2", token)
+
+	if err != nil {
+		t.Fatalf("could not get create comment: %s", err)
+	}
+
+	if result.Body != "Hello comment" {
+		t.Fatalf("comment body, expected \"Hello comment\", got %s", result.Body)
+	}
+}
+
+func TestGetAllComments(t *testing.T) {
+	token := setupListArticles(t)
+	defer tearDownListArticles()
+
+	domain.CreateComment("Hello comment", "t2", token)
+	domain.CreateComment("Hello comment 2", "t2", token)
+	result, err := domain.GetCommentsForArticle("t2", token)
+
+	if err != nil {
+		t.Fatalf("could not get get articles: %s", err)
+	}
+
+	if len(*result) == 0 {
+		t.Fatalf("got 0 comments, expected at least 1")
+	}
+}

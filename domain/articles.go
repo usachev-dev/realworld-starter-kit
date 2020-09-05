@@ -31,6 +31,14 @@ type ArticleResponse struct {
 	Author         Profile  `json:"author"`
 }
 
+type CommentResponse struct {
+	ID        uint    `json:"id"`
+	CreatedAt string  `json:"createdAt"`
+	UpdatedAt string  `json:"updatedAt"`
+	Body      string  `json:"body"`
+	Author    Profile `json:"author"`
+}
+
 func formatTime(t time.Time) string {
 	return t.UTC().Format("2006-01-02T15:04:05.999Z")
 }
@@ -377,6 +385,66 @@ func GetAllTags() (*[]string, *api_errors.E) {
 	result := []string{}
 	for _, t := range *tags {
 		result = append(result, t.Name)
+	}
+	return &result, nil
+}
+
+func CreateComment(body string, articleSlug string, tokenString string) (*CommentResponse, *api_errors.E) {
+	email, mailErr := auth.GetEmailFromTokenString(tokenString)
+	if mailErr != nil {
+		return nil, api_errors.NewError(http.StatusUnauthorized).Add("token", "token invalid")
+	}
+
+	user, uErr := models.GetUser(email)
+	if uErr != nil {
+		return nil, api_errors.NewError(http.StatusUnauthorized).Add("token", "token invalid")
+	}
+
+	profile, pErr := GetProfile(user.Username, tokenString)
+	if pErr != nil {
+		return nil, api_errors.NewError(http.StatusNotFound).Add("author", "author not found")
+	}
+
+	article, aErr := models.GetArticle(articleSlug)
+	if aErr != nil {
+		return nil, api_errors.NewError(http.StatusNotFound).Add("article", "article not found")
+	}
+
+	result, err := models.CreateComment(user.ID, article.ID, body)
+	if err != nil {
+		return nil, api_errors.NewError(http.StatusInternalServerError).Add("comment", err.Error())
+	}
+
+	return &CommentResponse{
+		ID:        result.ID,
+		CreatedAt: formatTime(result.CreatedAt),
+		UpdatedAt: formatTime(result.UpdatedAt),
+		Body:      result.Body,
+		Author:    *profile,
+	}, nil
+}
+
+func GetCommentsForArticle(slug string, tokenString string) (*[]CommentResponse, *api_errors.E) {
+	article, aErr := models.GetArticle(slug)
+	if aErr != nil {
+		return nil, api_errors.NewError(http.StatusNotFound).Add("article", "article not found")
+	}
+
+	comments, cErr := models.GetCommentsForArticle(article.ID)
+	if cErr != nil {
+		return nil, api_errors.NewError(http.StatusNotFound).Add("article", "article not found")
+	}
+
+	result := []CommentResponse{}
+	for _, c := range *comments {
+		profile, _ := GetProfile(c.User.Username, tokenString)
+		result = append(result, CommentResponse{
+			ID:        c.ID,
+			CreatedAt: formatTime(c.CreatedAt),
+			UpdatedAt: formatTime(c.UpdatedAt),
+			Body:      c.Body,
+			Author:    *profile,
+		})
 	}
 	return &result, nil
 }

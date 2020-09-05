@@ -11,4 +11,5 @@ func AutoMigrate() {
 	db.AutoMigrate(&Article{})
 	db.AutoMigrate(&Tag{})
 	db.AutoMigrate(&Favorite{})
+	db.AutoMigrate(&Comment{})
 }

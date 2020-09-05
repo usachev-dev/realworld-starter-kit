@@ -26,11 +26,23 @@ type Favorite struct {
 	UserID    uint
 }
 
+type Comment struct {
+	gorm.Model
+	ArticleID uint
+	AuthorID  uint
+	Body      string
+}
+
 type ArticlesList struct {
 	Article
 	User
 	Tag
 	Favorite
+}
+
+type CommentList struct {
+	Comment
+	User
 }
 
 func CreateArticle(a *Article, tags []string) (*Article, error) {
@@ -193,8 +205,8 @@ func ListArticles(tag string, authorID uint, favoritedByID uint, limit uint, off
 	dataQuery := "SELECT * " +
 		fmt.Sprintf("FROM (SELECT *, id as articleID FROM articles LIMIT %d OFFSET %d) as articles ", limit, offset) +
 		query //+
-		//" ORDER BY articles.created_at DESC"
-		// TODO
+	//" ORDER BY articles.created_at DESC"
+	// TODO
 
 	err := db.Raw(dataQuery).Scan(&result).Error
 	if err != nil {
@@ -278,4 +290,31 @@ func GetAllTags() (*[]Tag, error) {
 		return nil, err
 	}
 	return &tags, nil
+}
+
+func CreateComment(userID uint, articleID uint, body string) (*Comment, error) {
+	db := DB.Get()
+	comment := Comment{
+		Body:      body,
+		AuthorID:  userID,
+		ArticleID: articleID,
+	}
+	db.Create(&comment)
+	err := db.Error
+	if err != nil {
+		return nil, err
+	}
+	return &comment, nil
+}
+
+func GetCommentsForArticle(articleID uint) (*[]CommentList, error) {
+	db := DB.Get()
+	var comments []CommentList
+	query := fmt.Sprintf("SELECT * FROM comments JOIN articles ON comments.article_id = articles.id JOIN users ON comments.author_id = users.id WHERE comments.article_id = %d", articleID)
+	db.Raw(query).Scan(&comments)
+	err := db.Error
+	if err != nil {
+		return nil, err
+	}
+	return &comments, err
 }

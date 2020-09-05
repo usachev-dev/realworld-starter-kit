@@ -18,6 +18,7 @@ func UseRoutes(r *mux.Router) {
 	authRoutes.HandleFunc("/articles/{slug}", updateArticleHandle).Methods(http.MethodPut)
 	authRoutes.HandleFunc("/articles/{slug}/favorite", favoriteArticleHandle).Methods(http.MethodPost)
 	authRoutes.HandleFunc("/articles/{slug}/favorite", unfavoriteArticleHandle).Methods(http.MethodDelete)
+	authRoutes.HandleFunc("/articles/{slug}/comments", createCommentHandle).Methods(http.MethodPost)
 
 	r.HandleFunc("/users", createUserHandle).Methods(http.MethodPost)
 	r.HandleFunc("/users/login", signInHandle).Methods(http.MethodPost)
@@ -25,4 +26,6 @@ func UseRoutes(r *mux.Router) {
 	r.HandleFunc("/articles/{slug}", getArticleHandle).Methods(http.MethodGet)
 	r.HandleFunc("/articles", listArticlesHandle).Methods(http.MethodGet)
 	r.HandleFunc("/tags", getAllTagsHandle).Methods(http.MethodGet)
+	r.HandleFunc("/articles/{slug}/comments", getCommentsHandle).Methods(http.MethodGet)
+
 }
