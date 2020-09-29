@@ -7,6 +7,8 @@ services:
       POSTGRES_DB: "conduit"
     expose:
       - "5432"
+    volumes:
+      - db-data:/var/lib/postgresql
   api:
     build: .
     environment:
@@ -22,3 +24,6 @@ services:
       - "4000:4000"
     depends_on:
       - db
+
+volumes:
+  db-data:

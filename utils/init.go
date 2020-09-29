@@ -14,12 +14,11 @@ func Port() string {
 }
 
 func Host() string {
-	p := os.Getenv("HOST")
-	if p == "" {
-		p = "0.0.0.0"
+	h := os.Getenv("HOST")
+	if h == "" {
+		h = "0.0.0.0"
 	}
-	p = ":" + p
-	return p
+	return h
 }
 
 func DbPort() string {
